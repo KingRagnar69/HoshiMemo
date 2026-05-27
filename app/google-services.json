@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33264674876",
+    "project_id": "hoshimemo-e37ea",
+    "storage_bucket": "hoshimemo-e37ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33264674876:android:9a3a669dc4858bf9223b39",
+        "android_client_info": {
+          "package_name": "com.ragdev69.hoshimemo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcOfX7L--0K9Wc-L49zgF0fjaa71cV1UI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
