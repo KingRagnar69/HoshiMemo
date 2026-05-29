@@ -12,7 +12,20 @@
           "package_name": "com.ragdev69.hoshimemo"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "33264674876-0iqtaklqiqq81e711j6i6r1rvgk1nsf2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ragdev69.hoshimemo",
+            "certificate_hash": "43823731957afd830edef1d8d6a3058cc37d422a"
+          }
+        },
+        {
+          "client_id": "33264674876-ktksfd3rvikpab4prkvkjkf4gu9srq2b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDcOfX7L--0K9Wc-L49zgF0fjaa71cV1UI"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "33264674876-ktksfd3rvikpab4prkvkjkf4gu9srq2b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -13,13 +13,14 @@ class HoshiApp : Application() {
     }
 
     override fun attachBaseContext(base: Context) {
-        val prefs = base.getSharedPreferences("hoshi_locale", Context.MODE_PRIVATE)
-        val langCode = prefs.getString("lang", "en") ?: "en"
-        super.attachBaseContext(applyLocale(base, langCode))
+        val savedLang = base
+            .getSharedPreferences("hoshi_locale", Context.MODE_PRIVATE)
+            .getString("lang", "en") ?: "en"
+        super.attachBaseContext(wrapLocale(base, savedLang))
     }
 
     companion object {
-        fun applyLocale(context: Context, langCode: String): Context {
+        fun wrapLocale(context: Context, langCode: String): Context {
             val locale = Locale(langCode)
             Locale.setDefault(locale)
             val config = Configuration(context.resources.configuration)
@@ -27,7 +28,7 @@ class HoshiApp : Application() {
             return context.createConfigurationContext(config)
         }
 
-        fun saveLocale(context: Context, langCode: String) {
+        fun persistLocale(context: Context, langCode: String) {
             context.getSharedPreferences("hoshi_locale", Context.MODE_PRIVATE)
                 .edit()
                 .putString("lang", langCode)

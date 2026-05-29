@@ -58,12 +58,12 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         _isLoading.value = true
         try {
             val id = repo.saveNote(note)
+            _isLoading.value = false   // clear loading BEFORE navigating back
             _message.emit("Note saved ✓")
-            _isLoading.value = false   // ← clear loading BEFORE navigating back
             onSuccess(id)
         } catch (e: Exception) {
-            _message.emit(e.message ?: "Failed to save note")
             _isLoading.value = false
+            _message.emit(e.message ?: "Failed to save note")
         }
     }
 

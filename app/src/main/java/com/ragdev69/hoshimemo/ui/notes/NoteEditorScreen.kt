@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ragdev69.hoshimemo.data.model.Note
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
@@ -35,8 +34,6 @@ fun NoteEditorScreen(
     var title   by remember { mutableStateOf(noteTitle) }
     var content by remember { mutableStateOf(noteContent) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     val wordCount = remember(content) {
         content.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
@@ -125,8 +122,6 @@ fun NoteEditorScreen(
                 }
             }
 
-            // ── Divider ──────────────────────────────────────
-            // Fixed: Divider is deprecated in Material3, use HorizontalDivider
             HorizontalDivider(
                 color     = colors.border,
                 thickness = 0.5.dp,
@@ -193,38 +188,23 @@ fun NoteEditorScreen(
             )
         }
 
-        // ── Save FAB ──────────────────────────────────────────
-        AnimatedVisibility(
-            visible  = !isLoading,
-            enter    = scaleIn() + fadeIn(),
-            exit     = scaleOut() + fadeOut(),
-            modifier = Modifier
+        // ── Save FAB — always visible, never hides ────────────
+        FloatingActionButton(
+            onClick = {
+                if (title.isNotBlank() || content.isNotBlank()) {
+                    // FIX: go back immediately, save happens in background
+                    viewModel.saveNote(Note(id = noteId, title = title, content = content))
+                    onBack()
+                }
+            },
+            modifier       = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 24.dp)
+                .padding(end = 20.dp, bottom = 24.dp),
+            containerColor = colors.primary,
+            contentColor   = Color.White,
+            shape          = CircleShape
         ) {
-            FloatingActionButton(
-                onClick = {
-                    if (title.isNotBlank() || content.isNotBlank()) {
-                        viewModel.saveNote(
-                            Note(id = noteId, title = title, content = content)
-                        ) { onBack() }
-                    }
-                },
-                containerColor = colors.primary,
-                contentColor   = Color.White,
-                shape          = CircleShape
-            ) {
-                Icon(Icons.Filled.Save, contentDescription = "Save")
-            }
-        }
-
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 28.dp, bottom = 32.dp),
-                color = colors.primary
-            )
+            Icon(Icons.Filled.Save, contentDescription = "Save")
         }
     }
 }

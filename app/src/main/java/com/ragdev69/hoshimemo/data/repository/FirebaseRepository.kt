@@ -2,6 +2,8 @@ package com.ragdev69.hoshimemo.data.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.ragdev69.hoshimemo.data.model.Note
@@ -10,6 +12,7 @@ import com.ragdev69.hoshimemo.data.model.UserProfile
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.tasks.await
 
 class FirebaseRepository {
@@ -18,14 +21,18 @@ class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
 
     val currentUser: FirebaseUser? get() = auth.currentUser
-    private val userId: String    get() = auth.currentUser?.uid ?: "anonymous"
 
-    // ── Collection References ────────────────────────────────
+    private val userId: String
+        get() = auth.currentUser?.uid ?: throw IllegalStateException("User not logged in")
+
+    private val userIdOrNull: String?
+        get() = auth.currentUser?.uid
+
     private fun notesCol()   = db.collection("users").document(userId).collection("notes")
     private fun todosCol()   = db.collection("users").document(userId).collection("todos")
     private fun profileDoc() = db.collection("users").document(userId)
 
-    // ── Auth ─────────────────────────────────────────────────
+    // ── Auth ──────────────────────────────────────────────────
     suspend fun signInWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
@@ -44,9 +51,11 @@ class FirebaseRepository {
         }
     }
 
-    suspend fun signInAnonymously(): Result<FirebaseUser> {
+    // Google Sign-In — pass the idToken from GoogleSignIn result
+    suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
         return try {
-            val result = auth.signInAnonymously().await()
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = auth.signInWithCredential(credential).await()
             Result.success(result.user!!)
         } catch (e: Exception) {
             Result.failure(e)
@@ -55,43 +64,63 @@ class FirebaseRepository {
 
     fun signOut() = auth.signOut()
 
-    // ── Profile ──────────────────────────────────────────────
-    suspend fun saveProfile(profile: UserProfile) {
-        profileDoc().set(profile).await()
+    // ── Profile ───────────────────────────────────────────────
+    suspend fun saveProfile(profile: UserProfile, explicitUid: String? = null) {
+        val uid = explicitUid ?: userId
+        val data = mapOf(
+            "uid"           to uid,
+            "name"          to profile.name,
+            "email"         to profile.email,
+            "age"           to profile.age,
+            "bio"           to profile.bio,
+            "avatarInitial" to profile.avatarInitial
+        )
+        db.collection("users").document(uid).set(data).await()
     }
 
-    fun getProfile(): Flow<UserProfile?> = callbackFlow {
-        val listener = profileDoc().addSnapshotListener { snap, _ ->
-            trySend(snap?.toObject(UserProfile::class.java))
+    fun getProfile(): Flow<UserProfile?> {
+        val uid = userIdOrNull ?: return emptyFlow()
+        return callbackFlow {
+            val listener = db.collection("users").document(uid)
+                .addSnapshotListener { snap, err ->
+                    if (err != null) { close(err); return@addSnapshotListener }
+                    trySend(snap?.toObject(UserProfile::class.java))
+                }
+            awaitClose { listener.remove() }
         }
-        awaitClose { listener.remove() }
     }
 
-    // ── Notes ────────────────────────────────────────────────
-    fun getActiveNotes(sortBy: String = "updatedAt"): Flow<List<Note>> = callbackFlow {
-        val listener = notesCol()
-            .whereEqualTo("isDeleted", false)
-            .orderBy(sortBy, Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, err ->
-                if (err != null) { close(err); return@addSnapshotListener }
-                trySend(
-                    snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
-                )
-            }
-        awaitClose { listener.remove() }
+    // ── Notes ─────────────────────────────────────────────────
+    fun getActiveNotes(sortBy: String = "updatedAt"): Flow<List<Note>> {
+        val uid = userIdOrNull ?: return emptyFlow()
+        return callbackFlow {
+            val listener = db.collection("users").document(uid).collection("notes")
+                .whereEqualTo("isDeleted", false)
+                .orderBy(sortBy, Query.Direction.DESCENDING)
+                .addSnapshotListener { snap, err ->
+                    if (err != null) { close(err); return@addSnapshotListener }
+                    trySend(
+                        snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
+                    )
+                }
+            awaitClose { listener.remove() }
+        }
     }
 
-    fun getDeletedNotes(): Flow<List<Note>> = callbackFlow {
-        val listener = notesCol()
-            .whereEqualTo("isDeleted", true)
-            .orderBy("updatedAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, err ->
-                if (err != null) { close(err); return@addSnapshotListener }
-                trySend(
-                    snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
-                )
-            }
-        awaitClose { listener.remove() }
+    fun getDeletedNotes(): Flow<List<Note>> {
+        val uid = userIdOrNull ?: return emptyFlow()
+        return callbackFlow {
+            val listener = db.collection("users").document(uid).collection("notes")
+                .whereEqualTo("isDeleted", true)
+                .orderBy("updatedAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snap, err ->
+                    if (err != null) { close(err); return@addSnapshotListener }
+                    trySend(
+                        snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
+                    )
+                }
+            awaitClose { listener.remove() }
+        }
     }
 
     suspend fun saveNote(note: Note): String {
@@ -102,11 +131,10 @@ class FirebaseRepository {
             "isDeleted" to note.isDeleted,
             "userId"    to userId,
             "isPinned"  to note.isPinned,
-            "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            "updatedAt" to FieldValue.serverTimestamp()
         )
-
         return if (note.id.isEmpty()) {
-            data["createdAt"] = com.google.firebase.firestore.FieldValue.serverTimestamp()
+            data["createdAt"] = FieldValue.serverTimestamp()
             notesCol().add(data).await().id
         } else {
             notesCol().document(note.id).set(data).await()
@@ -117,14 +145,14 @@ class FirebaseRepository {
     suspend fun moveToTrash(noteId: String) {
         notesCol().document(noteId).update(
             "isDeleted", true,
-            "updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp()
+            "updatedAt", FieldValue.serverTimestamp()
         ).await()
     }
 
     suspend fun restoreNote(noteId: String) {
         notesCol().document(noteId).update(
             "isDeleted", false,
-            "updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp()
+            "updatedAt", FieldValue.serverTimestamp()
         ).await()
     }
 
@@ -132,17 +160,20 @@ class FirebaseRepository {
         notesCol().document(noteId).delete().await()
     }
 
-    // ── Todos ────────────────────────────────────────────────
-    fun getTodos(): Flow<List<TodoItem>> = callbackFlow {
-        val listener = todosCol()
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, err ->
-                if (err != null) { close(err); return@addSnapshotListener }
-                trySend(
-                    snap?.documents?.mapNotNull { it.toObject(TodoItem::class.java) } ?: emptyList()
-                )
-            }
-        awaitClose { listener.remove() }
+    // ── Todos ─────────────────────────────────────────────────
+    fun getTodos(): Flow<List<TodoItem>> {
+        val uid = userIdOrNull ?: return emptyFlow()
+        return callbackFlow {
+            val listener = db.collection("users").document(uid).collection("todos")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snap, err ->
+                    if (err != null) { close(err); return@addSnapshotListener }
+                    trySend(
+                        snap?.documents?.mapNotNull { it.toObject(TodoItem::class.java) } ?: emptyList()
+                    )
+                }
+            awaitClose { listener.remove() }
+        }
     }
 
     suspend fun saveTodo(todo: TodoItem): String {
@@ -151,7 +182,7 @@ class FirebaseRepository {
             "isCompleted" to todo.isCompleted,
             "userId"      to userId,
             "priority"    to todo.priority,
-            "createdAt"   to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            "createdAt"   to FieldValue.serverTimestamp()
         )
         return if (todo.id.isEmpty()) {
             todosCol().add(data).await().id

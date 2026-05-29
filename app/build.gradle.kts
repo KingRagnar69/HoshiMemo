@@ -6,13 +6,12 @@ plugins {
 
 android {
     namespace = "com.ragdev69.hoshimemo"
-    compileSdk = 34
-
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.ragdev69.hoshimemo"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
+        targetSdk = 35
+        versionCode = 2
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -53,6 +52,8 @@ android {
 
 dependencies {
     // Core
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")

@@ -31,28 +31,31 @@ import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
+    // Apply saved locale before Activity inflates any view
     override fun attachBaseContext(newBase: Context) {
-        val prefs = newBase.getSharedPreferences("hoshi_locale", Context.MODE_PRIVATE)
-        val langCode = prefs.getString("lang", "en") ?: "en"
-        super.attachBaseContext(HoshiApp.applyLocale(newBase, langCode))
+        val savedLang = newBase
+            .getSharedPreferences("hoshi_locale", Context.MODE_PRIVATE)
+            .getString("lang", "en") ?: "en"
+        super.attachBaseContext(HoshiApp.wrapLocale(newBase, savedLang))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             val settingsViewModel: SettingsViewModel = viewModel()
             val currentTheme    by settingsViewModel.currentTheme.collectAsStateWithLifecycle()
             val currentLanguage by settingsViewModel.currentLanguage.collectAsStateWithLifecycle()
 
-            // Recreate activity whenever language changes so locale takes effect
-            var appliedLang by remember { mutableStateOf(currentLanguage) }
+            // When language changes → persist it then recreate so attachBaseContext re-runs
+            var lastAppliedLang by remember { mutableStateOf("") }
             LaunchedEffect(currentLanguage) {
-                if (currentLanguage != appliedLang) {
-                    appliedLang = currentLanguage
-                    HoshiApp.saveLocale(this@MainActivity, currentLanguage)
+                if (lastAppliedLang.isNotEmpty() && currentLanguage != lastAppliedLang) {
+                    HoshiApp.persistLocale(this@MainActivity, currentLanguage)
                     recreate()
                 }
+                lastAppliedLang = currentLanguage
             }
 
             HoshiMemoTheme(appTheme = currentTheme) {
@@ -119,13 +122,10 @@ fun SplashContent(theme: AppTheme) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text     = "⭐",
-                fontSize = 60.sp,
-                modifier = Modifier.graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                }
+                fontSize = 64.sp,
+                modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale }
             )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text  = "Hoshi Memo",
                 style = MaterialTheme.typography.displayMedium.copy(
@@ -133,6 +133,7 @@ fun SplashContent(theme: AppTheme) {
                     color      = colors.text
                 )
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text  = "✨ Your thoughts, beautifully kept",
                 style = MaterialTheme.typography.bodyMedium.copy(
