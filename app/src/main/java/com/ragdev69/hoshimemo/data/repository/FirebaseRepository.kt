@@ -6,6 +6,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import com.ragdev69.hoshimemo.data.model.Note
 import com.ragdev69.hoshimemo.data.model.TodoItem
 import com.ragdev69.hoshimemo.data.model.UserProfile
@@ -28,9 +29,8 @@ class FirebaseRepository {
     private val userIdOrNull: String?
         get() = auth.currentUser?.uid
 
-    private fun notesCol()   = db.collection("users").document(userId).collection("notes")
-    private fun todosCol()   = db.collection("users").document(userId).collection("todos")
-    private fun profileDoc() = db.collection("users").document(userId)
+    private fun notesCol() = db.collection("users").document(userId).collection("notes")
+    private fun todosCol() = db.collection("users").document(userId).collection("todos")
 
     // ── Auth ──────────────────────────────────────────────────
     suspend fun signInWithEmail(email: String, password: String): Result<FirebaseUser> {
@@ -51,11 +51,10 @@ class FirebaseRepository {
         }
     }
 
-    // Google Sign-In — pass the idToken from GoogleSignIn result
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
-            val result = auth.signInWithCredential(credential).await()
+            val result     = auth.signInWithCredential(credential).await()
             Result.success(result.user!!)
         } catch (e: Exception) {
             Result.failure(e)
@@ -65,8 +64,22 @@ class FirebaseRepository {
     fun signOut() = auth.signOut()
 
     // ── Profile ───────────────────────────────────────────────
+
+    // FIX: check if a profile document already exists for this uid.
+    // Used by signInWithGoogle to skip writing the initial profile on
+    // repeat logins — prevents age/bio from being overwritten with "".
+    suspend fun profileExists(uid: String): Boolean {
+        return try {
+            val doc = db.collection("users").document(uid).get().await()
+            doc.exists()
+        } catch (e: Exception) {
+            // If we can't check, assume it exists to be safe (don't overwrite)
+            true
+        }
+    }
+
     suspend fun saveProfile(profile: UserProfile, explicitUid: String? = null) {
-        val uid = explicitUid ?: userId
+        val uid  = explicitUid ?: userId
         val data = mapOf(
             "uid"           to uid,
             "name"          to profile.name,
@@ -75,7 +88,9 @@ class FirebaseRepository {
             "bio"           to profile.bio,
             "avatarInitial" to profile.avatarInitial
         )
-        db.collection("users").document(uid).set(data).await()
+        db.collection("users").document(uid)
+            .set(data, SetOptions.merge())
+            .await()
     }
 
     fun getProfile(): Flow<UserProfile?> {
@@ -91,12 +106,11 @@ class FirebaseRepository {
     }
 
     // ── Notes ─────────────────────────────────────────────────
-    fun getActiveNotes(sortBy: String = "updatedAt"): Flow<List<Note>> {
+    fun getActiveNotes(): Flow<List<Note>> {
         val uid = userIdOrNull ?: return emptyFlow()
         return callbackFlow {
             val listener = db.collection("users").document(uid).collection("notes")
                 .whereEqualTo("isDeleted", false)
-                .orderBy(sortBy, Query.Direction.DESCENDING)
                 .addSnapshotListener { snap, err ->
                     if (err != null) { close(err); return@addSnapshotListener }
                     trySend(
@@ -112,7 +126,6 @@ class FirebaseRepository {
         return callbackFlow {
             val listener = db.collection("users").document(uid).collection("notes")
                 .whereEqualTo("isDeleted", true)
-                .orderBy("updatedAt", Query.Direction.DESCENDING)
                 .addSnapshotListener { snap, err ->
                     if (err != null) { close(err); return@addSnapshotListener }
                     trySend(
@@ -124,20 +137,28 @@ class FirebaseRepository {
     }
 
     suspend fun saveNote(note: Note): String {
-        val data = mutableMapOf<String, Any>(
-            "title"     to note.title,
-            "content"   to note.content,
-            "color"     to note.color,
-            "isDeleted" to note.isDeleted,
-            "userId"    to userId,
-            "isPinned"  to note.isPinned,
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
         return if (note.id.isEmpty()) {
-            data["createdAt"] = FieldValue.serverTimestamp()
+            val data = mutableMapOf<String, Any>(
+                "title"     to note.title,
+                "content"   to note.content,
+                "color"     to note.color,
+                "isDeleted" to note.isDeleted,
+                "userId"    to userId,
+                "isPinned"  to note.isPinned,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
             notesCol().add(data).await().id
         } else {
-            notesCol().document(note.id).set(data).await()
+            val data = mapOf<String, Any>(
+                "title"     to note.title,
+                "content"   to note.content,
+                "color"     to note.color,
+                "isDeleted" to note.isDeleted,
+                "isPinned"  to note.isPinned,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            notesCol().document(note.id).update(data).await()
             note.id
         }
     }

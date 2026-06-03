@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,7 +50,6 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
         }
     }
 
-    // Google Sign-In launcher
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -58,7 +58,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
             try {
                 val account = task.getResult(ApiException::class.java)
                 account.idToken?.let { viewModel.signInWithGoogle(it) }
-            } catch (e: ApiException) {
+            } catch (_: ApiException) {
                 // handled by viewModel message
             }
         }
@@ -101,7 +101,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
                                 .requestEmail()
                                 .build()
                             val client = GoogleSignIn.getClient(context, gso)
-                            client.signOut() // clear any cached account so picker always shows
+                            client.signOut()
                             googleLauncher.launch(client.signInIntent)
                         }
                     )
@@ -133,7 +133,6 @@ fun AuthScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Logo
         Box(
             modifier = Modifier
                 .size(90.dp)
@@ -186,7 +185,6 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Email/Password button
         Button(
             onClick = {
                 if (isSignUp) onCreate(email, password, name)
@@ -212,7 +210,6 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Divider
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -227,7 +224,6 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Google Sign-In button
         OutlinedButton(
             onClick  = onGoogleSignIn,
             enabled  = !isLoading,
@@ -261,9 +257,25 @@ fun ProfileContent(
     onSave: (UserProfile) -> Unit,
     onSignOut: () -> Unit
 ) {
-    var name    by remember(profile) { mutableStateOf(profile?.name ?: "") }
-    var age     by remember(profile) { mutableStateOf(profile?.age ?: "") }
-    var bio     by remember(profile) { mutableStateOf(profile?.bio ?: "") }
+    var name by remember { mutableStateOf("") }
+    var age  by remember { mutableStateOf("") }
+    var bio  by remember { mutableStateOf("") }
+
+    // FIX: track the uid we last seeded from, not just a boolean.
+    // Previously seeded=true would stick even after sign-out + sign-in
+    // with a different (or same) account — so fields would stay blank
+    // on re-login because LaunchedEffect thought it already seeded.
+    // Now we re-seed whenever the profile's uid changes (i.e. new login).
+    var seededUid by remember { mutableStateOf("") }
+    LaunchedEffect(profile) {
+        if (profile != null && profile.uid != seededUid) {
+            name      = profile.name
+            age       = profile.age
+            bio       = profile.bio
+            seededUid = profile.uid
+        }
+    }
+
     val email   = profile?.email ?: ""
     val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "H"
 
@@ -348,8 +360,12 @@ fun ProfileContent(
         Button(
             onClick = {
                 onSave(UserProfile(
-                    uid = profile?.uid ?: "", name = name,
-                    email = email, age = age, bio = bio, avatarInitial = initial
+                    uid           = profile?.uid ?: "",
+                    name          = name,
+                    email         = email,
+                    age           = age,
+                    bio           = bio,
+                    avatarInitial = initial
                 ))
             },
             enabled  = !isLoading,
@@ -376,7 +392,11 @@ fun ProfileContent(
             colors   = ButtonDefaults.outlinedButtonColors(contentColor = colors.accent),
             border   = BorderStroke(1.dp, colors.accent)
         ) {
-            Icon(Icons.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(
+                Icons.AutoMirrored.Filled.Logout,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Sign Out", fontWeight = FontWeight.Bold)
         }

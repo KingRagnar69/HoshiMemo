@@ -41,6 +41,9 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         _isLoading.value = true
         val result = repo.signInWithEmail(email, password)
         result.onSuccess {
+            // FIX: plain email sign-in — never touch the profile doc on login.
+            // The profile was already created during createAccount; overwriting
+            // it here would erase age/bio that the user saved previously.
             _isLoggedIn.value = true
             _message.emit("Welcome back! ✨")
         }.onFailure {
@@ -54,14 +57,18 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val result = repo.createAccount(email, password)
             result.onSuccess { user ->
+                // First-time account creation — safe to write initial profile
+                // because the document doesn't exist yet.
                 val profile = UserProfile(
                     uid           = user.uid,
                     name          = name,
                     email         = email,
+                    age           = "",
+                    bio           = "",
                     avatarInitial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "H"
                 )
                 repo.saveProfile(profile, explicitUid = user.uid)
-                _isLoading.value = false
+                _isLoading.value  = false
                 _isLoggedIn.value = true
                 _message.emit("Account created ✨")
             }.onFailure {
@@ -74,21 +81,28 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // Google Sign-In — called after getting idToken from Google
     fun signInWithGoogle(idToken: String) = viewModelScope.launch {
         _isLoading.value = true
         try {
             val result = repo.signInWithGoogle(idToken)
             result.onSuccess { user ->
-                // Save profile if first time signing in with Google
-                val profile = UserProfile(
-                    uid           = user.uid,
-                    name          = user.displayName ?: "",
-                    email         = user.email ?: "",
-                    avatarInitial = user.displayName?.firstOrNull()?.uppercaseChar()?.toString() ?: "G"
-                )
-                repo.saveProfile(profile, explicitUid = user.uid)
-                _isLoading.value = false
+                // FIX: only write profile if the document doesn't exist yet
+                // (first-time Google sign-in). On subsequent logins we skip
+                // the write entirely so age/bio are never erased.
+                val exists = repo.profileExists(user.uid)
+                if (!exists) {
+                    val profile = UserProfile(
+                        uid           = user.uid,
+                        name          = user.displayName ?: "",
+                        email         = user.email ?: "",
+                        age           = "",
+                        bio           = "",
+                        avatarInitial = user.displayName
+                            ?.firstOrNull()?.uppercaseChar()?.toString() ?: "G"
+                    )
+                    repo.saveProfile(profile, explicitUid = user.uid)
+                }
+                _isLoading.value  = false
                 _isLoggedIn.value = true
                 _message.emit("Welcome! ✨")
             }.onFailure {
@@ -110,7 +124,18 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     fun saveProfile(profile: UserProfile) = viewModelScope.launch {
         _isLoading.value = true
         try {
-            repo.saveProfile(profile)
+            val uid = repo.currentUser?.uid ?: run {
+                _message.emit("Not logged in")
+                _isLoading.value = false
+                return@launch
+            }
+            repo.saveProfile(
+                profile.copy(
+                    uid           = uid,
+                    avatarInitial = profile.name.firstOrNull()?.uppercaseChar()?.toString()
+                        ?: profile.avatarInitial
+                )
+            )
             _message.emit("Profile saved ✓")
         } catch (e: Exception) {
             _message.emit(e.message ?: "Failed to save profile")

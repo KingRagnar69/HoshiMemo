@@ -20,9 +20,23 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     val isGridLayout: StateFlow<Boolean> = prefs.gridLayoutFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    val notes: StateFlow<List<Note>> = sortBy
-        .flatMapLatest { repo.getActiveNotes(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // FIX (crash + immediate appearance):
+    // Previously called repo.getActiveNotes(sortBy) which passed sortBy into
+    // a Firestore orderBy() — that crashes without a composite index and also
+    // causes notes to temporarily disappear when serverTimestamp is pending.
+    // Now we fetch all active notes once (no Firestore orderBy) and sort
+    // entirely client-side using combine(). This is instant, works offline,
+    // and never crashes regardless of what sort key is selected.
+    val notes: StateFlow<List<Note>> = combine(
+        repo.getActiveNotes(),
+        sortBy
+    ) { noteList, sort ->
+        when (sort) {
+            "createdAt" -> noteList.sortedByDescending { it.createdAt }
+            "title"     -> noteList.sortedBy { it.title.lowercase() }
+            else        -> noteList.sortedByDescending { it.updatedAt } // "updatedAt" default
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val trashedNotes: StateFlow<List<Note>> = repo.getDeletedNotes()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -58,7 +72,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         _isLoading.value = true
         try {
             val id = repo.saveNote(note)
-            _isLoading.value = false   // clear loading BEFORE navigating back
+            _isLoading.value = false
             _message.emit("Note saved ✓")
             onSuccess(id)
         } catch (e: Exception) {
