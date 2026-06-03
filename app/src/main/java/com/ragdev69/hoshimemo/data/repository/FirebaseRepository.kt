@@ -32,6 +32,19 @@ class FirebaseRepository {
     private fun notesCol() = db.collection("users").document(userId).collection("notes")
     private fun todosCol() = db.collection("users").document(userId).collection("todos")
 
+    // ── Auth state flow ───────────────────────────────────────
+    // Emits the current uid (or null) every time login/logout happens.
+    // NotesViewModel flatMapLatest's on this so it automatically re-subscribes
+    // to the Firestore listener whenever the user signs in, without needing
+    // an app restart.
+    val authStateFlow: Flow<String?> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            trySend(firebaseAuth.currentUser?.uid)
+        }
+        auth.addAuthStateListener(listener)
+        awaitClose { auth.removeAuthStateListener(listener) }
+    }
+
     // ── Auth ──────────────────────────────────────────────────
     suspend fun signInWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
@@ -64,17 +77,11 @@ class FirebaseRepository {
     fun signOut() = auth.signOut()
 
     // ── Profile ───────────────────────────────────────────────
-
-    // FIX: check if a profile document already exists for this uid.
-    // Used by signInWithGoogle to skip writing the initial profile on
-    // repeat logins — prevents age/bio from being overwritten with "".
     suspend fun profileExists(uid: String): Boolean {
         return try {
-            val doc = db.collection("users").document(uid).get().await()
-            doc.exists()
+            db.collection("users").document(uid).get().await().exists()
         } catch (e: Exception) {
-            // If we can't check, assume it exists to be safe (don't overwrite)
-            true
+            true // assume exists to avoid overwriting on network error
         }
     }
 
@@ -106,39 +113,42 @@ class FirebaseRepository {
     }
 
     // ── Notes ─────────────────────────────────────────────────
-    fun getActiveNotes(): Flow<List<Note>> {
-        val uid = userIdOrNull ?: return emptyFlow()
-        return callbackFlow {
-            val listener = db.collection("users").document(uid).collection("notes")
-                .whereEqualTo("isDeleted", false)
-                .addSnapshotListener { snap, err ->
-                    if (err != null) { close(err); return@addSnapshotListener }
-                    trySend(
-                        snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
-                    )
-                }
-            awaitClose { listener.remove() }
-        }
+    // Both functions take an explicit uid so NotesViewModel can call them
+    // from inside a flatMapLatest(authStateFlow) block — at that point the
+    // uid is guaranteed to be non-null (we only call when uid != null).
+    fun getActiveNotes(uid: String): Flow<List<Note>> = callbackFlow {
+        val listener = db.collection("users").document(uid).collection("notes")
+            .whereEqualTo("isDeleted", false)
+            .addSnapshotListener { snap, err ->
+                if (err != null) { close(err); return@addSnapshotListener }
+                trySend(
+                    snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
+                )
+            }
+        awaitClose { listener.remove() }
     }
 
-    fun getDeletedNotes(): Flow<List<Note>> {
-        val uid = userIdOrNull ?: return emptyFlow()
-        return callbackFlow {
-            val listener = db.collection("users").document(uid).collection("notes")
-                .whereEqualTo("isDeleted", true)
-                .addSnapshotListener { snap, err ->
-                    if (err != null) { close(err); return@addSnapshotListener }
-                    trySend(
-                        snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
-                    )
-                }
-            awaitClose { listener.remove() }
-        }
+    fun getDeletedNotes(uid: String): Flow<List<Note>> = callbackFlow {
+        val listener = db.collection("users").document(uid).collection("notes")
+            .whereEqualTo("isDeleted", true)
+            .addSnapshotListener { snap, err ->
+                if (err != null) { close(err); return@addSnapshotListener }
+                trySend(
+                    snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
+                )
+            }
+        awaitClose { listener.remove() }
     }
 
     suspend fun saveNote(note: Note): String {
         return if (note.id.isEmpty()) {
-            val data = mutableMapOf<String, Any>(
+            // FIX: generate the document ID locally with .document() so we never
+            // need to await a server response just to get an ID.
+            // .set() with a pre-made ref writes to the local cache instantly
+            // (offline persistence is on), which makes the snapshot listener fire
+            // immediately — the note appears in the list before the server confirms.
+            val newRef = notesCol().document()          // ID assigned locally, no network
+            val data = mapOf<String, Any>(
                 "title"     to note.title,
                 "content"   to note.content,
                 "color"     to note.color,
@@ -148,7 +158,8 @@ class FirebaseRepository {
                 "createdAt" to FieldValue.serverTimestamp(),
                 "updatedAt" to FieldValue.serverTimestamp()
             )
-            notesCol().add(data).await().id
+            newRef.set(data)   // fire-and-forget: cache is instant, server syncs async
+            newRef.id          // return immediately — no await needed
         } else {
             val data = mapOf<String, Any>(
                 "title"     to note.title,
@@ -158,7 +169,8 @@ class FirebaseRepository {
                 "isPinned"  to note.isPinned,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
-            notesCol().document(note.id).update(data).await()
+            // Fire-and-forget: local cache commits instantly, server syncs in background.
+            notesCol().document(note.id).update(data)
             note.id
         }
     }

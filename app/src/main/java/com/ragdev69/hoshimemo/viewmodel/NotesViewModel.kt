@@ -20,25 +20,42 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     val isGridLayout: StateFlow<Boolean> = prefs.gridLayoutFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    // FIX (crash + immediate appearance):
-    // Previously called repo.getActiveNotes(sortBy) which passed sortBy into
-    // a Firestore orderBy() — that crashes without a composite index and also
-    // causes notes to temporarily disappear when serverTimestamp is pending.
-    // Now we fetch all active notes once (no Firestore orderBy) and sort
-    // entirely client-side using combine(). This is instant, works offline,
-    // and never crashes regardless of what sort key is selected.
-    val notes: StateFlow<List<Note>> = combine(
-        repo.getActiveNotes(),
-        sortBy
-    ) { noteList, sort ->
+    // FIX — Problem 1 (notes missing after login):
+    // The old code called repo.getActiveNotes() once at ViewModel init time.
+    // If the user wasn't logged in yet, userIdOrNull was null → emptyFlow()
+    // was returned and the Firestore listener was never attached. Notes only
+    // appeared after a restart because that re-ran getActiveNotes() with a
+    // valid uid.
+    //
+    // Fix: flatMapLatest on authStateFlow. Every time the user logs in or out,
+    // authStateFlow emits the new uid (or null). When uid is non-null we attach
+    // a fresh Firestore listener; when null we emit an empty list. This means
+    // notes appear the moment authentication completes — no restart needed.
+    //
+    // FIX — Problem 2 (sort not working / note delay):
+    // Sorting is done client-side with combine() so all three sort keys work
+    // without Firestore composite indexes. The write path in saveNote() no
+    // longer awaits server confirmation, so the snapshot listener fires from
+    // the local cache instantly.
+    private val rawNotes: Flow<List<Note>> = repo.authStateFlow
+        .flatMapLatest { uid ->
+            if (uid != null) repo.getActiveNotes(uid)
+            else flowOf(emptyList())
+        }
+
+    val notes: StateFlow<List<Note>> = combine(rawNotes, sortBy) { noteList, sort ->
         when (sort) {
             "createdAt" -> noteList.sortedByDescending { it.createdAt }
             "title"     -> noteList.sortedBy { it.title.lowercase() }
-            else        -> noteList.sortedByDescending { it.updatedAt } // "updatedAt" default
+            else        -> noteList.sortedByDescending { it.updatedAt }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val trashedNotes: StateFlow<List<Note>> = repo.getDeletedNotes()
+    val trashedNotes: StateFlow<List<Note>> = repo.authStateFlow
+        .flatMapLatest { uid ->
+            if (uid != null) repo.getDeletedNotes(uid)
+            else flowOf(emptyList())
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
