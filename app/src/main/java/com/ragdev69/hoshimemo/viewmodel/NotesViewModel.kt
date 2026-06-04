@@ -103,6 +103,15 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun moveMultipleToTrash(noteIds: List<String>) = viewModelScope.launch {
+        try {
+            repo.moveMultipleToTrash(noteIds)
+            _message.emit("${noteIds.size} note${if (noteIds.size > 1) "s" else ""} moved to trash")
+        } catch (e: Exception) {
+            _message.emit(e.message ?: "Error")
+        }
+    }
+
     fun restoreNote(noteId: String) = viewModelScope.launch {
         try {
             repo.restoreNote(noteId)

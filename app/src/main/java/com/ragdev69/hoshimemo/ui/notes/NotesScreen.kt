@@ -47,6 +47,20 @@ fun NotesScreen(
 
     var showSortMenu by remember { mutableStateOf(false) }
 
+    // ── Selection state ───────────────────────────────────────
+    // selectedIds: set of note IDs currently checked.
+    // isSelectionMode: true when at least one note is selected (long-pressed).
+    var selectedIds     by remember { mutableStateOf(setOf<String>()) }
+    val isSelectionMode  = selectedIds.isNotEmpty()
+
+    // Exit selection mode when notes list changes (e.g. after trash)
+    LaunchedEffect(notes) {
+        if (isSelectionMode) {
+            // Keep only IDs that still exist in the list
+            selectedIds = selectedIds.intersect(notes.map { it.id }.toSet())
+        }
+    }
+
     // Read strings at composable scope — safe, not inside lambdas
     val strTitle         = stringResource(R.string.notes_title)
     val strCount         = stringResource(R.string.notes_count, notes.size)
@@ -71,105 +85,154 @@ fun NotesScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 52.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                if (isSelectionMode) {
+                    // ── Selection mode header ─────────────────
+                    // Close button — clears selection
+                    IconButton(onClick = { selectedIds = emptySet() }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Cancel selection",
+                            tint = colors.text
+                        )
+                    }
                     Text(
-                        text  = strTitle,
-                        style = MaterialTheme.typography.headlineLarge.copy(
+                        text  = "${selectedIds.size} selected",
+                        style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color      = colors.text
-                        )
+                        ),
+                        modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        text  = strCount,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = colors.textSecondary
-                        )
-                    )
-                }
-
-                // Sort button
-                Box {
-                    IconButton(onClick = { showSortMenu = true }) {
-                        Icon(
-                            Icons.Filled.Sort,
-                            contentDescription = "Sort",
-                            tint = colors.textSecondary
-                        )
-                    }
-                    DropdownMenu(
-                        expanded         = showSortMenu,
-                        onDismissRequest = { showSortMenu = false },
-                        modifier         = Modifier.background(colors.surface)
-                    ) {
-                        listOf(
-                            "updatedAt" to strSortModified,
-                            "createdAt" to strSortCreated,
-                            "title"     to strSortName
-                        ).forEach { (key, label) ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        label,
-                                        color = if (sortBy == key) colors.primary else colors.text
-                                    )
-                                },
-                                onClick = {
-                                    viewModel.setSortBy(key)
-                                    showSortMenu = false
-                                }
-                            )
+                    // Select-all toggle
+                    IconButton(onClick = {
+                        selectedIds = if (selectedIds.size == notes.size) {
+                            emptySet()
+                        } else {
+                            notes.map { it.id }.toSet()
                         }
+                    }) {
+                        Icon(
+                            imageVector = if (selectedIds.size == notes.size)
+                                Icons.Filled.Deselect else Icons.Filled.SelectAll,
+                            contentDescription = "Select all",
+                            tint = colors.primary
+                        )
                     }
-                }
+                    // Trash selected
+                    IconButton(onClick = {
+                        viewModel.moveMultipleToTrash(selectedIds.toList())
+                        selectedIds = emptySet()
+                    }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Move selected to trash",
+                            tint = colors.accent
+                        )
+                    }
+                } else {
+                    // ── Normal header ─────────────────────────
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text  = strTitle,
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color      = colors.text
+                            )
+                        )
+                        Text(
+                            text  = strCount,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = colors.textSecondary
+                            )
+                        )
+                    }
 
-                // Layout toggle
-                IconButton(onClick = { viewModel.setGridLayout(!isGrid) }) {
-                    Icon(
-                        imageVector        = if (isGrid) Icons.Filled.ViewList else Icons.Filled.GridView,
-                        contentDescription = "Toggle layout",
-                        tint               = colors.primary
-                    )
-                }
-            }
-
-            // ── Search Bar ───────────────────────────────────
-            OutlinedTextField(
-                value         = searchQuery,
-                onValueChange = viewModel::setSearchQuery,
-                modifier      = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text(strSearchHint, color = colors.textSecondary) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Filled.Search,
-                        contentDescription = null,
-                        tint = colors.textSecondary
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                    // Sort button
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
                             Icon(
-                                Icons.Filled.Clear,
-                                contentDescription = "Clear",
+                                Icons.Filled.Sort,
+                                contentDescription = "Sort",
                                 tint = colors.textSecondary
                             )
                         }
+                        DropdownMenu(
+                            expanded         = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                            modifier         = Modifier.background(colors.surface)
+                        ) {
+                            listOf(
+                                "updatedAt" to strSortModified,
+                                "createdAt" to strSortCreated,
+                                "title"     to strSortName
+                            ).forEach { (key, label) ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            label,
+                                            color = if (sortBy == key) colors.primary else colors.text
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setSortBy(key)
+                                        showSortMenu = false
+                                    }
+                                )
+                            }
+                        }
                     }
-                },
-                singleLine = true,
-                shape      = RoundedCornerShape(16.dp),
-                colors     = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor      = colors.primary,
-                    unfocusedBorderColor    = colors.border,
-                    focusedTextColor        = colors.text,
-                    unfocusedTextColor      = colors.text,
-                    cursorColor             = colors.primary,
-                    focusedContainerColor   = colors.surface,
-                    unfocusedContainerColor = colors.surface
+
+                    // Layout toggle
+                    IconButton(onClick = { viewModel.setGridLayout(!isGrid) }) {
+                        Icon(
+                            imageVector        = if (isGrid) Icons.Filled.ViewList else Icons.Filled.GridView,
+                            contentDescription = "Toggle layout",
+                            tint               = colors.primary
+                        )
+                    }
+                }
+            }
+
+            // ── Search Bar (hidden during selection mode) ─────
+            if (!isSelectionMode) {
+                OutlinedTextField(
+                    value         = searchQuery,
+                    onValueChange = viewModel::setSearchQuery,
+                    modifier      = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text(strSearchHint, color = colors.textSecondary) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = null,
+                            tint = colors.textSecondary
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                Icon(
+                                    Icons.Filled.Clear,
+                                    contentDescription = "Clear",
+                                    tint = colors.textSecondary
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape      = RoundedCornerShape(16.dp),
+                    colors     = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor      = colors.primary,
+                        unfocusedBorderColor    = colors.border,
+                        focusedTextColor        = colors.text,
+                        unfocusedTextColor      = colors.text,
+                        cursorColor             = colors.primary,
+                        focusedContainerColor   = colors.surface,
+                        unfocusedContainerColor = colors.surface
+                    )
                 )
-            )
+            }
 
             // ── Notes Grid / List ────────────────────────────
             if (notes.isEmpty()) {
@@ -213,14 +276,29 @@ fun NotesScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(notes, key = { it.id }) { note ->
+                                val isSelected = note.id in selectedIds
                                 NoteCard(
-                                    note    = note,
-                                    onClick = {
-                                        navController.navigate(
-                                            Screen.NoteEditor.createRoute(
-                                                note.id, note.title, note.content
+                                    note        = note,
+                                    isSelected  = isSelected,
+                                    isSelectionMode = isSelectionMode,
+                                    onClick     = {
+                                        if (isSelectionMode) {
+                                            // In selection mode: tap toggles selection
+                                            selectedIds = if (isSelected)
+                                                selectedIds - note.id
+                                            else
+                                                selectedIds + note.id
+                                        } else {
+                                            navController.navigate(
+                                                Screen.NoteEditor.createRoute(
+                                                    note.id, note.title, note.content
+                                                )
                                             )
-                                        )
+                                        }
+                                    },
+                                    onLongClick = {
+                                        // Long press always enters/extends selection mode
+                                        selectedIds = selectedIds + note.id
                                     }
                                 )
                             }
@@ -236,15 +314,28 @@ fun NotesScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(notes, key = { it.id }) { note ->
+                                val isSelected = note.id in selectedIds
                                 NoteCard(
-                                    note       = note,
-                                    isListMode = true,
-                                    onClick    = {
-                                        navController.navigate(
-                                            Screen.NoteEditor.createRoute(
-                                                note.id, note.title, note.content
+                                    note            = note,
+                                    isListMode      = true,
+                                    isSelected      = isSelected,
+                                    isSelectionMode = isSelectionMode,
+                                    onClick         = {
+                                        if (isSelectionMode) {
+                                            selectedIds = if (isSelected)
+                                                selectedIds - note.id
+                                            else
+                                                selectedIds + note.id
+                                        } else {
+                                            navController.navigate(
+                                                Screen.NoteEditor.createRoute(
+                                                    note.id, note.title, note.content
+                                                )
                                             )
-                                        )
+                                        }
+                                    },
+                                    onLongClick = {
+                                        selectedIds = selectedIds + note.id
                                     }
                                 )
                             }
@@ -254,27 +345,33 @@ fun NotesScreen(
             }
         }
 
-        // ── FAB ──────────────────────────────────────────────
-        FloatingActionButton(
-            onClick        = { navController.navigate(Screen.NoteEditor.createRoute()) },
-            modifier       = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 20.dp)
-                .shadow(12.dp, CircleShape),
-            containerColor = colors.primary,
-            contentColor   = Color.White,
-            shape          = CircleShape
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "New Note")
+        // ── FAB (hidden during selection mode) ────────────────
+        if (!isSelectionMode) {
+            FloatingActionButton(
+                onClick        = { navController.navigate(Screen.NoteEditor.createRoute()) },
+                modifier       = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 20.dp)
+                    .shadow(12.dp, CircleShape),
+                containerColor = colors.primary,
+                contentColor   = Color.White,
+                shape          = CircleShape
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "New Note")
+            }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NoteCard(
     note: Note,
     isListMode: Boolean = false,
-    onClick: () -> Unit
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     val colors   = LocalHoshiColors.current
     val sdf      = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
@@ -291,36 +388,85 @@ fun NoteCard(
         label = "glow_alpha"
     )
 
+    // Selected cards get a colored border highlight
+    val cardBorder = if (isSelected)
+        BorderStroke(2.dp, colors.primary)
+    else
+        null
+
+    // FIX: removed Card(onClick=onClick) — having both Card's own onClick AND
+    // combinedClickable on the modifier caused double-firing on tap and prevented
+    // long press from being detected. Now combinedClickable is the single handler.
     Card(
-        onClick   = onClick,
         modifier  = Modifier
             .fillMaxWidth()
-            .then(if (!isListMode) Modifier.height(160.dp) else Modifier),
+            .then(if (!isListMode) Modifier.height(160.dp) else Modifier)
+            .combinedClickable(
+                onClick     = onClick,
+                onLongClick = onLongClick
+            ),
         shape     = RoundedCornerShape(20.dp),
-        colors    = CardDefaults.cardColors(containerColor = colors.card),
+        colors    = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                colors.primary.copy(alpha = 0.15f)
+            else
+                colors.card
+        ),
+        border    = cardBorder,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                colors.primary.copy(alpha = glowAlpha),
-                                Color.Transparent
+            // Glow overlay (only when not selected)
+            if (!isSelected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    colors.primary.copy(alpha = glowAlpha),
+                                    Color.Transparent
+                                )
                             )
                         )
-                    )
-            )
+                )
+            }
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(14.dp)
             ) {
-                if (note.isPinned) {
-                    Text("📌", fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+                // Pin indicator / selection checkbox row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (note.isPinned && !isSelectionMode) {
+                        Text("📌", fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    // Checkbox — visible in selection mode
+                    if (isSelectionMode) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .background(
+                                    color = if (isSelected) colors.primary else colors.border,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = "Selected",
+                                    tint     = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Text(

@@ -176,6 +176,20 @@ class FirebaseRepository {
         ).await()
     }
 
+    // Move multiple notes to trash in a single Firestore batch write.
+    suspend fun moveMultipleToTrash(noteIds: List<String>) {
+        if (noteIds.isEmpty()) return
+        val batch = db.batch()
+        noteIds.forEach { id ->
+            val ref = notesCol().document(id)
+            batch.update(ref, mapOf(
+                "isDeleted" to true,
+                "updatedAt" to FieldValue.serverTimestamp()
+            ))
+        }
+        batch.commit().await()
+    }
+
     suspend fun restoreNote(noteId: String) {
         notesCol().document(noteId).update(
             "isDeleted", false,
