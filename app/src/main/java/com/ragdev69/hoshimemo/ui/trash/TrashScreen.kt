@@ -11,11 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ragdev69.hoshimemo.R
 import com.ragdev69.hoshimemo.data.model.Note
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.NotesViewModel
@@ -28,26 +30,29 @@ fun TrashScreen(viewModel: NotesViewModel = viewModel()) {
     val trashed by viewModel.trashedNotes.collectAsStateWithLifecycle()
     var showEmptyDialog by remember { mutableStateOf(false) }
 
+    val strTitle         = stringResource(R.string.trash_title)
+    val strEmptyAction   = stringResource(R.string.trash_empty_action)
+    val strEmptyTitle    = stringResource(R.string.trash_empty_title)
+    val strEmptySubtitle = stringResource(R.string.trash_empty_subtitle)
+    val strDialogTitle   = stringResource(R.string.trash_empty_dialog_title)
+    val strDialogMsg     = stringResource(R.string.trash_empty_dialog_msg, trashed.size)
+    val strCancel        = stringResource(R.string.trash_cancel)
+
     if (showEmptyDialog) {
         AlertDialog(
             onDismissRequest = { showEmptyDialog = false },
             containerColor   = colors.surface,
-            title = { Text("Empty Trash?", color = colors.text, fontWeight = FontWeight.Bold) },
-            text  = {
-                Text(
-                    "All ${trashed.size} notes will be permanently deleted. This cannot be undone.",
-                    color = colors.textSecondary
-                )
-            },
+            title = { Text(strDialogTitle, color = colors.text, fontWeight = FontWeight.Bold) },
+            text  = { Text(strDialogMsg, color = colors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.emptyTrash()
                     showEmptyDialog = false
-                }) { Text("Empty", color = colors.accent, fontWeight = FontWeight.Bold) }
+                }) { Text(strEmptyAction, color = colors.accent, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { showEmptyDialog = false }) {
-                    Text("Cancel", color = colors.textSecondary)
+                    Text(strCancel, color = colors.textSecondary)
                 }
             }
         )
@@ -65,7 +70,7 @@ fun TrashScreen(viewModel: NotesViewModel = viewModel()) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Trash 🗑️",
+                strTitle,
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold, color = colors.text
                 ),
@@ -74,7 +79,7 @@ fun TrashScreen(viewModel: NotesViewModel = viewModel()) {
             if (trashed.isNotEmpty()) {
                 TextButton(onClick = { showEmptyDialog = true }) {
                     Text(
-                        "Empty Trash", color = colors.accent,
+                        strEmptyAction, color = colors.accent,
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
@@ -89,21 +94,12 @@ fun TrashScreen(viewModel: NotesViewModel = viewModel()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("🗑️", fontSize = 60.sp)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Trash is empty",
-                        style = MaterialTheme.typography.titleMedium.copy(color = colors.text)
-                    )
-                    Text(
-                        "Deleted notes appear here",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = colors.textSecondary
-                        )
-                    )
+                    Text(strEmptyTitle, style = MaterialTheme.typography.titleMedium.copy(color = colors.text))
+                    Text(strEmptySubtitle, style = MaterialTheme.typography.bodyMedium.copy(color = colors.textSecondary))
                 }
             }
         } else {
             LazyColumn(
-                // Fixed: can't mix horizontal/vertical with bottom — use start/top/end/bottom
                 contentPadding = PaddingValues(
                     start  = 12.dp,
                     end    = 12.dp,
@@ -126,31 +122,31 @@ fun TrashScreen(viewModel: NotesViewModel = viewModel()) {
 
 @Composable
 fun TrashNoteCard(note: Note, onRestore: () -> Unit, onDelete: () -> Unit) {
-    val colors = LocalHoshiColors.current
-    val sdf    = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val colors   = LocalHoshiColors.current
+    val sdf      = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val untitled = stringResource(R.string.notes_untitled)
+    val strDeleteTitle = stringResource(R.string.trash_delete_dialog_title)
+    val strDeleteMsg   = stringResource(R.string.trash_delete_dialog_msg, note.title.ifEmpty { untitled })
+    val strDelete      = stringResource(R.string.trash_delete)
+    val strCancel      = stringResource(R.string.trash_cancel)
+    val strDeletedOn   = note.updatedAt?.let { stringResource(R.string.trash_deleted_on, sdf.format(it)) }
+
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             containerColor   = colors.surface,
-            title = {
-                Text("Delete Forever?", color = colors.text, fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Text(
-                    "\"${note.title.ifEmpty { "Untitled" }}\" will be permanently removed.",
-                    color = colors.textSecondary
-                )
-            },
+            title = { Text(strDeleteTitle, color = colors.text, fontWeight = FontWeight.Bold) },
+            text  = { Text(strDeleteMsg, color = colors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = { onDelete(); showDeleteDialog = false }) {
-                    Text("Delete", color = colors.accent, fontWeight = FontWeight.Bold)
+                    Text(strDelete, color = colors.accent, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel", color = colors.textSecondary)
+                    Text(strCancel, color = colors.textSecondary)
                 }
             }
         )
@@ -170,7 +166,7 @@ fun TrashNoteCard(note: Note, onRestore: () -> Unit, onDelete: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text  = note.title.ifEmpty { "Untitled" },
+                    text  = note.title.ifEmpty { untitled },
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold, color = colors.text
                     )
@@ -178,36 +174,24 @@ fun TrashNoteCard(note: Note, onRestore: () -> Unit, onDelete: () -> Unit) {
                 if (note.content.isNotEmpty()) {
                     Text(
                         text     = note.content,
-                        style    = MaterialTheme.typography.bodySmall.copy(
-                            color = colors.textSecondary
-                        ),
+                        style    = MaterialTheme.typography.bodySmall.copy(color = colors.textSecondary),
                         maxLines = 2
                     )
                 }
-                note.updatedAt?.let {
+                if (strDeletedOn != null) {
                     Text(
-                        text     = "Deleted ${sdf.format(it)}",
-                        style    = MaterialTheme.typography.labelSmall.copy(
-                            color = colors.textSecondary
-                        ),
+                        text     = strDeletedOn,
+                        style    = MaterialTheme.typography.labelSmall.copy(color = colors.textSecondary),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
 
             IconButton(onClick = onRestore) {
-                Icon(
-                    Icons.Filled.Restore,
-                    contentDescription = "Restore",
-                    tint = colors.primary
-                )
+                Icon(Icons.Filled.Restore, contentDescription = "Restore", tint = colors.primary)
             }
             IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    Icons.Filled.DeleteForever,
-                    contentDescription = "Delete Forever",
-                    tint = colors.accent
-                )
+                Icon(Icons.Filled.DeleteForever, contentDescription = "Delete Forever", tint = colors.accent)
             }
         }
     }

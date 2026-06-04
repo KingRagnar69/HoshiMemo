@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.ragdev69.hoshimemo.R
 import com.ragdev69.hoshimemo.data.model.Note
 import com.ragdev69.hoshimemo.ui.navigation.Screen
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
@@ -45,6 +47,16 @@ fun NotesScreen(
 
     var showSortMenu by remember { mutableStateOf(false) }
 
+    // Read strings at composable scope — safe, not inside lambdas
+    val strTitle         = stringResource(R.string.notes_title)
+    val strCount         = stringResource(R.string.notes_count, notes.size)
+    val strSortModified  = stringResource(R.string.notes_sort_modified)
+    val strSortCreated   = stringResource(R.string.notes_sort_created)
+    val strSortName      = stringResource(R.string.notes_sort_name)
+    val strSearchHint    = stringResource(R.string.notes_search_hint)
+    val strEmptyTitle    = stringResource(R.string.notes_empty_title)
+    val strEmptySubtitle = stringResource(R.string.notes_empty_subtitle)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -61,14 +73,14 @@ fun NotesScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text  = "Hoshi Memo ⭐",
+                        text  = strTitle,
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color      = colors.text
                         )
                     )
                     Text(
-                        text  = "${notes.size} notes",
+                        text  = strCount,
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = colors.textSecondary
                         )
@@ -90,9 +102,9 @@ fun NotesScreen(
                         modifier         = Modifier.background(colors.surface)
                     ) {
                         listOf(
-                            "updatedAt" to "Date Modified",
-                            "createdAt" to "Date Created",
-                            "title"     to "Name A-Z"
+                            "updatedAt" to strSortModified,
+                            "createdAt" to strSortCreated,
+                            "title"     to strSortName
                         ).forEach { (key, label) ->
                             DropdownMenuItem(
                                 text = {
@@ -127,7 +139,7 @@ fun NotesScreen(
                 modifier      = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("🔍  Search notes...", color = colors.textSecondary) },
+                placeholder = { Text(strSearchHint, color = colors.textSecondary) },
                 leadingIcon = {
                     Icon(
                         Icons.Filled.Search,
@@ -169,11 +181,11 @@ fun NotesScreen(
                         Text("⭐", fontSize = 60.sp)
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            "No notes yet",
+                            strEmptyTitle,
                             style = MaterialTheme.typography.titleMedium.copy(color = colors.text)
                         )
                         Text(
-                            "Tap + to create your first note",
+                            strEmptySubtitle,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = colors.textSecondary
                             )
@@ -191,7 +203,6 @@ fun NotesScreen(
                     if (grid) {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
-                            // Fixed: can't mix horizontal/vertical with bottom
                             contentPadding = PaddingValues(
                                 start  = 12.dp,
                                 end    = 12.dp,
@@ -216,7 +227,6 @@ fun NotesScreen(
                         }
                     } else {
                         LazyColumn(
-                            // Fixed: can't mix horizontal/vertical with bottom
                             contentPadding = PaddingValues(
                                 start  = 12.dp,
                                 end    = 12.dp,
@@ -266,8 +276,9 @@ fun NoteCard(
     isListMode: Boolean = false,
     onClick: () -> Unit
 ) {
-    val colors = LocalHoshiColors.current
-    val sdf    = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val colors   = LocalHoshiColors.current
+    val sdf      = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val untitled = stringResource(R.string.notes_untitled)
 
     val infiniteTransition = rememberInfiniteTransition(label = "card_glow")
     val glowAlpha by infiniteTransition.animateFloat(
@@ -313,7 +324,7 @@ fun NoteCard(
                 }
 
                 Text(
-                    text     = note.title.ifEmpty { "Untitled" },
+                    text     = note.title.ifEmpty { untitled },
                     style    = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color      = colors.text

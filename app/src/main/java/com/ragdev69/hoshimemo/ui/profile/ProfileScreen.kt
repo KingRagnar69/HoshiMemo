@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -36,18 +37,15 @@ import com.ragdev69.hoshimemo.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
-    val colors        = LocalHoshiColors.current
-    val isLoggedIn   by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-    val profile      by viewModel.profile.collectAsStateWithLifecycle()
-    val isLoading    by viewModel.isLoading.collectAsStateWithLifecycle()
-    val context       = LocalContext.current
-
+    val colors       = LocalHoshiColors.current
+    val isLoggedIn  by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val profile     by viewModel.profile.collectAsStateWithLifecycle()
+    val isLoading   by viewModel.isLoading.collectAsStateWithLifecycle()
+    val context      = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        viewModel.message.collect { msg ->
-            snackbarHostState.showSnackbar(msg)
-        }
+        viewModel.message.collect { msg -> snackbarHostState.showSnackbar(msg) }
     }
 
     val googleLauncher = rememberLauncherForActivityResult(
@@ -58,21 +56,12 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
             try {
                 val account = task.getResult(ApiException::class.java)
                 account.idToken?.let { viewModel.signInWithGoogle(it) }
-            } catch (_: ApiException) {
-                // handled by viewModel message
-            }
+            } catch (_: ApiException) {}
         }
     }
 
-    Scaffold(
-        containerColor = colors.background,
-        snackbarHost   = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
+    Scaffold(containerColor = colors.background, snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             AnimatedContent(
                 targetState = isLoggedIn,
                 transitionSpec = {
@@ -98,8 +87,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
                         onGoogleSignIn = {
                             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                                 .requestIdToken(context.getString(R.string.default_web_client_id))
-                                .requestEmail()
-                                .build()
+                                .requestEmail().build()
                             val client = GoogleSignIn.getClient(context, gso)
                             client.signOut()
                             googleLauncher.launch(client.signInIntent)
@@ -126,102 +114,53 @@ fun AuthScreen(
     var showPass by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier
-                .size(90.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(colors = listOf(colors.primary, colors.accent))
-                ),
+            modifier = Modifier.size(90.dp).clip(CircleShape)
+                .background(Brush.radialGradient(colors = listOf(colors.primary, colors.accent))),
             contentAlignment = Alignment.Center
-        ) {
-            Text("⭐", fontSize = 40.sp)
-        }
+        ) { Text("⭐", fontSize = 40.sp) }
 
         Spacer(modifier = Modifier.height(20.dp))
-
+        Text("Hoshi Memo", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.text))
         Text(
-            "Hoshi Memo",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.Bold, color = colors.text
-            )
-        )
-        Text(
-            if (isSignUp) "Create your account" else "Welcome back!",
+            stringResource(if (isSignUp) R.string.profile_create_account_subtitle else R.string.profile_welcome_back),
             style = MaterialTheme.typography.bodyMedium.copy(color = colors.textSecondary)
         )
-
         Spacer(modifier = Modifier.height(32.dp))
 
         AnimatedVisibility(visible = isSignUp) {
             Column {
-                HoshiTextField(
-                    value = name, onValueChange = { name = it },
-                    label = "Your Name", icon = Icons.Filled.Person, colors = colors
-                )
+                HoshiTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.profile_name_hint), icon = Icons.Filled.Person, colors = colors)
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
 
-        HoshiTextField(
-            value = email, onValueChange = { email = it },
-            label = "Email", icon = Icons.Filled.Email, colors = colors
-        )
+        HoshiTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.profile_email_hint), icon = Icons.Filled.Email, colors = colors)
         Spacer(modifier = Modifier.height(12.dp))
-
-        HoshiTextField(
-            value = password, onValueChange = { password = it },
-            label = "Password", icon = Icons.Filled.Lock, colors = colors,
-            isPassword = true, showPassword = showPass,
-            onTogglePassword = { showPass = !showPass }
-        )
-
+        HoshiTextField(value = password, onValueChange = { password = it }, label = stringResource(R.string.profile_password_hint), icon = Icons.Filled.Lock, colors = colors, isPassword = true, showPassword = showPass, onTogglePassword = { showPass = !showPass })
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                if (isSignUp) onCreate(email, password, name)
-                else onSignIn(email, password)
-            },
+            onClick  = { if (isSignUp) onCreate(email, password, name) else onSignIn(email, password) },
             enabled  = email.isNotBlank() && password.isNotBlank() && !isLoading,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape    = RoundedCornerShape(16.dp),
             colors   = ButtonDefaults.buttonColors(containerColor = colors.primary)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = Color.White, strokeWidth = 2.dp
-                )
-            } else {
-                Text(
-                    if (isSignUp) "Create Account" else "Sign In",
-                    fontWeight = FontWeight.Bold, color = Color.White
-                )
-            }
+            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+            else Text(stringResource(if (isSignUp) R.string.profile_create_account else R.string.profile_sign_in), fontWeight = FontWeight.Bold, color = Color.White)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             HorizontalDivider(modifier = Modifier.weight(1f), color = colors.border)
-            Text(
-                "  or  ",
-                style = MaterialTheme.typography.bodySmall.copy(color = colors.textSecondary)
-            )
+            Text("  ${stringResource(R.string.profile_or)}  ", style = MaterialTheme.typography.bodySmall.copy(color = colors.textSecondary))
             HorizontalDivider(modifier = Modifier.weight(1f), color = colors.border)
         }
-
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedButton(
@@ -234,17 +173,12 @@ fun AuthScreen(
         ) {
             Text("G", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF4285F4))
             Spacer(modifier = Modifier.width(10.dp))
-            Text("Continue with Google", fontWeight = FontWeight.Medium, color = colors.text)
+            Text(stringResource(R.string.profile_google), fontWeight = FontWeight.Medium, color = colors.text)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
         TextButton(onClick = { isSignUp = !isSignUp }) {
-            Text(
-                if (isSignUp) "Already have an account? Sign In"
-                else "New here? Create an account",
-                color = colors.primary
-            )
+            Text(stringResource(if (isSignUp) R.string.profile_have_account else R.string.profile_no_account), color = colors.primary)
         }
     }
 }
@@ -261,11 +195,6 @@ fun ProfileContent(
     var age  by remember { mutableStateOf("") }
     var bio  by remember { mutableStateOf("") }
 
-    // FIX: track the uid we last seeded from, not just a boolean.
-    // Previously seeded=true would stick even after sign-out + sign-in
-    // with a different (or same) account — so fields would stay blank
-    // on re-login because LaunchedEffect thought it already seeded.
-    // Now we re-seed whenever the profile's uid changes (i.e. new login).
     var seededUid by remember { mutableStateOf("") }
     LaunchedEffect(profile) {
         if (profile != null && profile.uid != seededUid) {
@@ -280,109 +209,53 @@ fun ProfileContent(
     val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "H"
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(52.dp))
-
         Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(colors = listOf(colors.primary, colors.accent))
-                ),
+            modifier = Modifier.size(100.dp).clip(CircleShape)
+                .background(Brush.radialGradient(colors = listOf(colors.primary, colors.accent))),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text  = initial,
-                style = MaterialTheme.typography.displayMedium.copy(
-                    color = Color.White, fontWeight = FontWeight.Bold
-                )
-            )
+            Text(text = initial, style = MaterialTheme.typography.displayMedium.copy(color = Color.White, fontWeight = FontWeight.Bold))
         }
-
         Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text  = name.ifEmpty { "Hoshi User" },
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold, color = colors.text
-            )
-        )
-        Text(
-            text  = email,
-            style = MaterialTheme.typography.bodyMedium.copy(color = colors.textSecondary)
-        )
-
+        Text(text = name.ifEmpty { stringResource(R.string.profile_default_name) }, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = colors.text))
+        Text(text = email, style = MaterialTheme.typography.bodyMedium.copy(color = colors.textSecondary))
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text(
-            "PROFILE INFO",
-            style = MaterialTheme.typography.labelSmall.copy(
-                color = colors.primary, letterSpacing = 1.5.sp
-            ),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-        )
+        Text(stringResource(R.string.profile_info), style = MaterialTheme.typography.labelSmall.copy(color = colors.primary, letterSpacing = 1.5.sp), modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp))
 
-        HoshiTextField(
-            value = name, onValueChange = { name = it },
-            label = "Display Name", icon = Icons.Filled.Person, colors = colors
-        )
+        HoshiTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.profile_display_name), icon = Icons.Filled.Person, colors = colors)
         Spacer(modifier = Modifier.height(12.dp))
-
-        HoshiTextField(
-            value = age, onValueChange = { age = it },
-            label = "Age", icon = Icons.Filled.Cake, colors = colors
-        )
+        HoshiTextField(value = age, onValueChange = { age = it }, label = stringResource(R.string.profile_age), icon = Icons.Filled.Cake, colors = colors)
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value         = bio,
             onValueChange = { bio = it },
-            label         = { Text("Bio", color = colors.textSecondary) },
+            label         = { Text(stringResource(R.string.profile_bio), color = colors.textSecondary) },
             modifier      = Modifier.fillMaxWidth().height(120.dp),
             shape         = RoundedCornerShape(16.dp),
             colors        = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = colors.primary,
-                unfocusedBorderColor = colors.border,
-                focusedTextColor     = colors.text,
-                unfocusedTextColor   = colors.text,
+                focusedBorderColor   = colors.primary, unfocusedBorderColor = colors.border,
+                focusedTextColor     = colors.text,    unfocusedTextColor   = colors.text,
                 cursorColor          = colors.primary
             )
         )
-
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                onSave(UserProfile(
-                    uid           = profile?.uid ?: "",
-                    name          = name,
-                    email         = email,
-                    age           = age,
-                    bio           = bio,
-                    avatarInitial = initial
-                ))
-            },
+            onClick  = { onSave(UserProfile(uid = profile?.uid ?: "", name = name, email = email, age = age, bio = bio, avatarInitial = initial)) },
             enabled  = !isLoading,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape    = RoundedCornerShape(16.dp),
             colors   = ButtonDefaults.buttonColors(containerColor = colors.primary)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = Color.White, strokeWidth = 2.dp
-                )
-            } else {
-                Text("Save Profile", fontWeight = FontWeight.Bold, color = Color.White)
-            }
+            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+            else Text(stringResource(R.string.profile_save), fontWeight = FontWeight.Bold, color = Color.White)
         }
-
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedButton(
@@ -392,54 +265,37 @@ fun ProfileContent(
             colors   = ButtonDefaults.outlinedButtonColors(contentColor = colors.accent),
             border   = BorderStroke(1.dp, colors.accent)
         ) {
-            Icon(
-                Icons.AutoMirrored.Filled.Logout,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Sign Out", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.profile_sign_out), fontWeight = FontWeight.Bold)
         }
-
         Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
 @Composable
 fun HoshiTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
+    value: String, onValueChange: (String) -> Unit, label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     colors: com.ragdev69.hoshimemo.ui.theme.HoshiColors,
-    isPassword: Boolean = false,
-    showPassword: Boolean = false,
-    onTogglePassword: () -> Unit = {}
+    isPassword: Boolean = false, showPassword: Boolean = false, onTogglePassword: () -> Unit = {}
 ) {
     OutlinedTextField(
-        value         = value,
-        onValueChange = onValueChange,
-        label         = { Text(label, color = colors.textSecondary) },
-        leadingIcon   = { Icon(icon, contentDescription = null, tint = colors.textSecondary) },
-        trailingIcon  = if (isPassword) ({
+        value = value, onValueChange = onValueChange,
+        label       = { Text(label, color = colors.textSecondary) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = colors.textSecondary) },
+        trailingIcon = if (isPassword) ({
             IconButton(onClick = onTogglePassword) {
-                Icon(
-                    imageVector        = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                    contentDescription = null,
-                    tint               = colors.textSecondary
-                )
+                Icon(imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, contentDescription = null, tint = colors.textSecondary)
             }
         }) else null,
-        visualTransformation = if (isPassword && !showPassword) PasswordVisualTransformation()
-        else VisualTransformation.None,
+        visualTransformation = if (isPassword && !showPassword) PasswordVisualTransformation() else VisualTransformation.None,
         singleLine = true,
         modifier   = Modifier.fillMaxWidth(),
         shape      = RoundedCornerShape(16.dp),
         colors     = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor   = colors.primary,
-            unfocusedBorderColor = colors.border,
-            focusedTextColor     = colors.text,
-            unfocusedTextColor   = colors.text,
+            focusedBorderColor   = colors.primary, unfocusedBorderColor = colors.border,
+            focusedTextColor     = colors.text,    unfocusedTextColor   = colors.text,
             cursorColor          = colors.primary
         )
     )

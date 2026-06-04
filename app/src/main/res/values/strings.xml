@@ -2,4 +2,95 @@
 <resources>
     <string name="app_name">Hoshi Memo</string>
     <string name="default_web_client_id">YOUR_WEB_CLIENT_ID</string>
+
+    <!-- App -->
+    <string name="app_tagline">✨ Your thoughts, beautifully kept</string>
+
+    <!-- Bottom Nav -->
+    <string name="tab_notes">Notes</string>
+    <string name="tab_todo">To-Do</string>
+    <string name="tab_trash">Trash</string>
+    <string name="tab_profile">Profile</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Notes Screen -->
+    <string name="notes_title">Hoshi Memo ⭐</string>
+    <string name="notes_count">%1$d notes</string>
+    <string name="notes_search_hint">🔍  Search notes...</string>
+    <string name="notes_empty_title">No notes yet</string>
+    <string name="notes_empty_subtitle">Tap + to create your first note</string>
+    <string name="notes_sort_modified">Date Modified</string>
+    <string name="notes_sort_created">Date Created</string>
+    <string name="notes_sort_name">Name A-Z</string>
+    <string name="notes_untitled">Untitled</string>
+
+    <!-- Note Editor -->
+    <string name="editor_title_hint">Title</string>
+    <string name="editor_content_hint">Start writing your thoughts...</string>
+    <string name="editor_word_count">%1$d words · %2$d chars</string>
+    <string name="editor_move_to_trash">Move to Trash?</string>
+    <string name="editor_move_to_trash_msg">This note will be moved to trash.</string>
+    <string name="editor_move">Move</string>
+    <string name="editor_cancel">Cancel</string>
+
+    <!-- Trash Screen -->
+    <string name="trash_title">Trash 🗑️</string>
+    <string name="trash_empty_title">Trash is empty</string>
+    <string name="trash_empty_subtitle">Deleted notes appear here</string>
+    <string name="trash_empty_action">Empty Trash</string>
+    <string name="trash_empty_dialog_title">Empty Trash?</string>
+    <string name="trash_empty_dialog_msg">All %1$d notes will be permanently deleted. This cannot be undone.</string>
+    <string name="trash_delete_dialog_title">Delete Forever?</string>
+    <string name="trash_delete_dialog_msg">"%1$s" will be permanently removed.</string>
+    <string name="trash_delete">Delete</string>
+    <string name="trash_cancel">Cancel</string>
+    <string name="trash_deleted_on">Deleted %1$s</string>
+
+    <!-- Todo Screen -->
+    <string name="todo_title">My Tasks</string>
+    <string name="todo_progress">%1$d of %2$d done</string>
+    <string name="todo_empty_title">All clear!</string>
+    <string name="todo_empty_subtitle">Tap + to add your first task</string>
+    <string name="todo_section_pending">PENDING</string>
+    <string name="todo_section_completed">COMPLETED</string>
+    <string name="todo_new_task">New Task</string>
+    <string name="todo_task_hint">What needs to be done?</string>
+    <string name="todo_priority">PRIORITY</string>
+    <string name="todo_priority_normal">Normal</string>
+    <string name="todo_priority_medium">Medium</string>
+    <string name="todo_priority_high">High</string>
+    <string name="todo_add">Add Task</string>
+    <string name="todo_cancel">Cancel</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_welcome_back">Welcome back!</string>
+    <string name="profile_create_account_subtitle">Create your account</string>
+    <string name="profile_sign_in">Sign In</string>
+    <string name="profile_create_account">Create Account</string>
+    <string name="profile_google">Continue with Google</string>
+    <string name="profile_or">or</string>
+    <string name="profile_have_account">Already have an account? Sign In</string>
+    <string name="profile_no_account">New here? Create an account</string>
+    <string name="profile_name_hint">Your Name</string>
+    <string name="profile_email_hint">Email</string>
+    <string name="profile_password_hint">Password</string>
+    <string name="profile_info">PROFILE INFO</string>
+    <string name="profile_display_name">Display Name</string>
+    <string name="profile_age">Age</string>
+    <string name="profile_bio">Bio</string>
+    <string name="profile_save">Save Profile</string>
+    <string name="profile_sign_out">Sign Out</string>
+    <string name="profile_default_name">Hoshi User</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Personalize your experience</string>
+    <string name="settings_appearance">✨  APPEARANCE</string>
+    <string name="settings_language">🌍  LANGUAGE</string>
+    <string name="settings_currently_selected">Currently selected</string>
+    <string name="settings_version">Hoshi Memo v1.0</string>
+
+    <!-- Common -->
+    <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
 </resources>

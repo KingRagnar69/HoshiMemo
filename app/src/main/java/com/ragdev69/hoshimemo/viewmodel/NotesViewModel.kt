@@ -3,9 +3,11 @@ package com.ragdev69.hoshimemo.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.ragdev69.hoshimemo.data.model.Note
 import com.ragdev69.hoshimemo.data.repository.FirebaseRepository
 import com.ragdev69.hoshimemo.utils.PrefsManager
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -20,30 +22,25 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     val isGridLayout: StateFlow<Boolean> = prefs.gridLayoutFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    // FIX — Problem 1 (notes missing after login):
-    // The old code called repo.getActiveNotes() once at ViewModel init time.
-    // If the user wasn't logged in yet, userIdOrNull was null → emptyFlow()
-    // was returned and the Firestore listener was never attached. Notes only
-    // appeared after a restart because that re-ran getActiveNotes() with a
-    // valid uid.
-    //
-    // Fix: flatMapLatest on authStateFlow. Every time the user logs in or out,
-    // authStateFlow emits the new uid (or null). When uid is non-null we attach
-    // a fresh Firestore listener; when null we emit an empty list. This means
-    // notes appear the moment authentication completes — no restart needed.
-    //
-    // FIX — Problem 2 (sort not working / note delay):
-    // Sorting is done client-side with combine() so all three sort keys work
-    // without Firestore composite indexes. The write path in saveNote() no
-    // longer awaits server confirmation, so the snapshot listener fires from
-    // the local cache instantly.
-    private val rawNotes: Flow<List<Note>> = repo.authStateFlow
-        .flatMapLatest { uid ->
-            if (uid != null) repo.getActiveNotes(uid)
-            else flowOf(emptyList())
+    // FIX: watch Firebase Auth state changes and re-subscribe to Firestore
+    // whenever the user logs in or out. Previously getActiveNotes() was called
+    // once at ViewModel init — if the user wasn't logged in yet it returned
+    // emptyFlow() and never re-subscribed after login, so notes only appeared
+    // after an app restart.
+    private val authStateFlow: Flow<String?> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            trySend(auth.currentUser?.uid)
         }
+        FirebaseAuth.getInstance().addAuthStateListener(listener)
+        awaitClose { FirebaseAuth.getInstance().removeAuthStateListener(listener) }
+    }.distinctUntilChanged()
 
-    val notes: StateFlow<List<Note>> = combine(rawNotes, sortBy) { noteList, sort ->
+    val notes: StateFlow<List<Note>> = combine(
+        authStateFlow.flatMapLatest { uid ->
+            if (uid != null) repo.getActiveNotes() else flowOf(emptyList())
+        },
+        sortBy
+    ) { noteList, sort ->
         when (sort) {
             "createdAt" -> noteList.sortedByDescending { it.createdAt }
             "title"     -> noteList.sortedBy { it.title.lowercase() }
@@ -51,10 +48,9 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val trashedNotes: StateFlow<List<Note>> = repo.authStateFlow
+    val trashedNotes: StateFlow<List<Note>> = authStateFlow
         .flatMapLatest { uid ->
-            if (uid != null) repo.getDeletedNotes(uid)
-            else flowOf(emptyList())
+            if (uid != null) repo.getDeletedNotes() else flowOf(emptyList())
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
