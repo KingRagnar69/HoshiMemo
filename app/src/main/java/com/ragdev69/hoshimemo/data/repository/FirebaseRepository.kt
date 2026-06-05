@@ -32,33 +32,31 @@ class FirebaseRepository {
     private fun notesCol() = db.collection("users").document(userId).collection("notes")
     private fun todosCol() = db.collection("users").document(userId).collection("todos")
 
+    // Emits uid on every login/logout — used by ViewModels to re-subscribe
+    val authStateFlow: Flow<String?> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser?.uid) }
+        auth.addAuthStateListener(listener)
+        awaitClose { auth.removeAuthStateListener(listener) }
+    }
+
     // ── Auth ──────────────────────────────────────────────────
     suspend fun signInWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
-            val result = auth.signInWithEmailAndPassword(email, password).await()
-            Result.success(result.user!!)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+            Result.success(auth.signInWithEmailAndPassword(email, password).await().user!!)
+        } catch (e: Exception) { Result.failure(e) }
     }
 
     suspend fun createAccount(email: String, password: String): Result<FirebaseUser> {
         return try {
-            val result = auth.createUserWithEmailAndPassword(email, password).await()
-            Result.success(result.user!!)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+            Result.success(auth.createUserWithEmailAndPassword(email, password).await().user!!)
+        } catch (e: Exception) { Result.failure(e) }
     }
 
     suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
-            val result     = auth.signInWithCredential(credential).await()
-            Result.success(result.user!!)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+            Result.success(auth.signInWithCredential(credential).await().user!!)
+        } catch (e: Exception) { Result.failure(e) }
     }
 
     fun signOut() = auth.signOut()
@@ -66,11 +64,8 @@ class FirebaseRepository {
     // ── Profile ───────────────────────────────────────────────
     suspend fun profileExists(uid: String): Boolean {
         return try {
-            val doc = db.collection("users").document(uid).get().await()
-            doc.exists()
-        } catch (e: Exception) {
-            true
-        }
+            db.collection("users").document(uid).get().await().exists()
+        } catch (e: Exception) { true }
     }
 
     suspend fun saveProfile(profile: UserProfile, explicitUid: String? = null) {
@@ -83,9 +78,7 @@ class FirebaseRepository {
             "bio"           to profile.bio,
             "avatarInitial" to profile.avatarInitial
         )
-        db.collection("users").document(uid)
-            .set(data, SetOptions.merge())
-            .await()
+        db.collection("users").document(uid).set(data, SetOptions.merge()).await()
     }
 
     fun getProfile(): Flow<UserProfile?> {
@@ -108,9 +101,7 @@ class FirebaseRepository {
                 .whereEqualTo("isDeleted", false)
                 .addSnapshotListener { snap, err ->
                     if (err != null) { close(err); return@addSnapshotListener }
-                    trySend(
-                        snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
-                    )
+                    trySend(snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList())
                 }
             awaitClose { listener.remove() }
         }
@@ -123,23 +114,14 @@ class FirebaseRepository {
                 .whereEqualTo("isDeleted", true)
                 .addSnapshotListener { snap, err ->
                     if (err != null) { close(err); return@addSnapshotListener }
-                    trySend(
-                        snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList()
-                    )
+                    trySend(snap?.documents?.mapNotNull { it.toObject(Note::class.java) } ?: emptyList())
                 }
             awaitClose { listener.remove() }
         }
     }
 
-    // FIX (new note delay): don't .await() on writes — with offline persistence
-    // enabled Firestore commits to local cache instantly and fires the snapshot
-    // listener before the server responds. Using .await() was blocking until the
-    // server round-trip completed (~1-2s) before returning, which is why the note
-    // felt delayed. Now we fire-and-forget the write; the listener picks it up
-    // from cache immediately.
     suspend fun saveNote(note: Note): String {
         return if (note.id.isEmpty()) {
-            // Generate a local ID immediately so we can return it without waiting
             val docRef = notesCol().document()
             val data = mapOf<String, Any>(
                 "title"     to note.title,
@@ -151,7 +133,6 @@ class FirebaseRepository {
                 "createdAt" to FieldValue.serverTimestamp(),
                 "updatedAt" to FieldValue.serverTimestamp()
             )
-            // set() without await — fires instantly to local cache
             docRef.set(data)
             docRef.id
         } else {
@@ -163,7 +144,6 @@ class FirebaseRepository {
                 "isPinned"  to note.isPinned,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
-            // update() without await — fires instantly to local cache
             notesCol().document(note.id).update(data)
             note.id
         }
@@ -171,18 +151,15 @@ class FirebaseRepository {
 
     suspend fun moveToTrash(noteId: String) {
         notesCol().document(noteId).update(
-            "isDeleted", true,
-            "updatedAt", FieldValue.serverTimestamp()
+            "isDeleted", true, "updatedAt", FieldValue.serverTimestamp()
         ).await()
     }
 
-    // Move multiple notes to trash in a single Firestore batch write.
     suspend fun moveMultipleToTrash(noteIds: List<String>) {
         if (noteIds.isEmpty()) return
         val batch = db.batch()
         noteIds.forEach { id ->
-            val ref = notesCol().document(id)
-            batch.update(ref, mapOf(
+            batch.update(notesCol().document(id), mapOf(
                 "isDeleted" to true,
                 "updatedAt" to FieldValue.serverTimestamp()
             ))
@@ -192,8 +169,7 @@ class FirebaseRepository {
 
     suspend fun restoreNote(noteId: String) {
         notesCol().document(noteId).update(
-            "isDeleted", false,
-            "updatedAt", FieldValue.serverTimestamp()
+            "isDeleted", false, "updatedAt", FieldValue.serverTimestamp()
         ).await()
     }
 
@@ -209,9 +185,7 @@ class FirebaseRepository {
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener { snap, err ->
                     if (err != null) { close(err); return@addSnapshotListener }
-                    trySend(
-                        snap?.documents?.mapNotNull { it.toObject(TodoItem::class.java) } ?: emptyList()
-                    )
+                    trySend(snap?.documents?.mapNotNull { it.toObject(TodoItem::class.java) } ?: emptyList())
                 }
             awaitClose { listener.remove() }
         }
@@ -219,11 +193,13 @@ class FirebaseRepository {
 
     suspend fun saveTodo(todo: TodoItem): String {
         val data = mapOf(
-            "title"       to todo.title,
-            "isCompleted" to todo.isCompleted,
-            "userId"      to userId,
-            "priority"    to todo.priority,
-            "createdAt"   to FieldValue.serverTimestamp()
+            "title"          to todo.title,
+            "isCompleted"    to todo.isCompleted,
+            "userId"         to userId,
+            "priority"       to todo.priority,
+            "timerSeconds"   to todo.timerSeconds,    // FIX: persist timer duration
+            "timerStartedAt" to todo.timerStartedAt,  // FIX: persist absolute start time
+            "createdAt"      to FieldValue.serverTimestamp()
         )
         return if (todo.id.isEmpty()) {
             todosCol().add(data).await().id
