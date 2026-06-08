@@ -481,6 +481,15 @@ private fun TodoCard(
         else -> Color.Transparent
     }
 
+    // ── Optimistic local checkbox state ───────────────────────
+    // FIX: Checkbox(checked = todo.isCompleted) waits for Firestore to confirm
+    // the write (~300-500ms) before showing the tick. The animation never fires
+    // because the card moves out of the pending list before the burst can play.
+    // Fix: flip localCompleted instantly on tap; sync it back when Firestore
+    // responds (todo.isCompleted changes) so they stay in agreement.
+    var localCompleted by remember(todo.id) { mutableStateOf(todo.isCompleted) }
+    LaunchedEffect(todo.isCompleted) { localCompleted = todo.isCompleted }
+
     // ── Completion animation state ─────────────────────────────
     // previousCompleted intentionally starts as false — NOT todo.isCompleted.
     // If it started as todo.isCompleted, then when isCompleted flips true the
@@ -488,14 +497,14 @@ private fun TodoCard(
     var previousCompleted by remember(todo.id) { mutableStateOf(false) }
     var justCompleted     by remember(todo.id) { mutableStateOf(false) }
 
-    // Key on BOTH todo.id and todo.isCompleted so the effect reruns on every flip
-    LaunchedEffect(todo.id, todo.isCompleted) {
-        if (todo.isCompleted && !previousCompleted) {
+    // Key on BOTH todo.id and localCompleted so the effect reruns on every flip
+    LaunchedEffect(todo.id, localCompleted) {
+        if (localCompleted && !previousCompleted) {
             justCompleted = true
             delay(600)
             justCompleted = false
         }
-        previousCompleted = todo.isCompleted
+        previousCompleted = localCompleted
     }
 
     val burstFraction by animateFloatAsState(
@@ -504,7 +513,7 @@ private fun TodoCard(
         label         = "burst"
     )
     val doneFraction by animateFloatAsState(
-        targetValue   = if (todo.isCompleted) 1f else 0f,
+        targetValue   = if (localCompleted) 1f else 0f,
         animationSpec = tween(400),
         label         = "done"
     )
@@ -599,7 +608,7 @@ private fun TodoCard(
         modifier  = Modifier.fillMaxWidth().scale(cardScale),
         shape     = RoundedCornerShape(18.dp),
         colors    = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (todo.isCompleted) 0.dp else 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (localCompleted) 0.dp else 3.dp)
     ) {
         Row(
             modifier          = Modifier
@@ -619,11 +628,15 @@ private fun TodoCard(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Checkbox
+            // Checkbox — uses localCompleted for instant visual feedback.
+            // onToggle() fires the Firestore update in the background.
             Box(modifier = Modifier.scale(checkScale)) {
                 Checkbox(
-                    checked         = todo.isCompleted,
-                    onCheckedChange = { onToggle() },
+                    checked         = localCompleted,
+                    onCheckedChange = {
+                        localCompleted = !localCompleted   // instant tick/untick
+                        onToggle()                         // async Firestore update
+                    },
                     colors          = CheckboxDefaults.colors(
                         checkedColor   = colors.primary,
                         uncheckedColor = colors.textSecondary,
@@ -641,9 +654,10 @@ private fun TodoCard(
                 Text(
                     text  = todo.title,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color          = if (todo.isCompleted) colors.textSecondary else colors.text,
-                        textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                        fontWeight     = if (todo.isCompleted) FontWeight.Normal else FontWeight.SemiBold
+                        // Use localCompleted so strikethrough + dimming happen instantly
+                        color          = if (localCompleted) colors.textSecondary else colors.text,
+                        textDecoration = if (localCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                        fontWeight     = if (localCompleted) FontWeight.Normal else FontWeight.SemiBold
                     )
                 )
                 todo.createdAt?.let {
@@ -685,9 +699,9 @@ private fun TodoCard(
                 }
             }
 
-            // Done badge (appears when completed)
+            // Done badge — uses localCompleted so it appears instantly on tap
             AnimatedVisibility(
-                visible = todo.isCompleted,
+                visible = localCompleted,
                 enter   = scaleIn(spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMedium)) + fadeIn(tween(200)),
                 exit    = scaleOut() + fadeOut()
             ) {
