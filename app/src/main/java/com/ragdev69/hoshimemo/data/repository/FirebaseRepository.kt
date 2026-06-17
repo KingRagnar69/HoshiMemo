@@ -29,8 +29,9 @@ class FirebaseRepository {
     private val userIdOrNull: String?
         get() = auth.currentUser?.uid
 
-    private fun notesCol() = db.collection("users").document(userId).collection("notes")
-    private fun todosCol() = db.collection("users").document(userId).collection("todos")
+    private fun notesCol()  = db.collection("users").document(userId).collection("notes")
+    private fun todosCol()  = db.collection("users").document(userId).collection("todos")
+    private fun groupsCol() = db.collection("users").document(userId).collection("todoGroups")
 
     // Emits uid on every login/logout — used by ViewModels to re-subscribe
     val authStateFlow: Flow<String?> = callbackFlow {
@@ -195,10 +196,14 @@ class FirebaseRepository {
         val data = mapOf(
             "title"          to todo.title,
             "isCompleted"    to todo.isCompleted,
+            "isFailed"       to todo.isFailed,
             "userId"         to userId,
             "priority"       to todo.priority,
-            "timerSeconds"   to todo.timerSeconds,    // FIX: persist timer duration
-            "timerStartedAt" to todo.timerStartedAt,  // FIX: persist absolute start time
+            "timerSeconds"   to todo.timerSeconds,
+            "timerStartedAt" to todo.timerStartedAt,
+            "groupId"        to todo.groupId,
+            "groupName"      to todo.groupName,
+            "orderInGroup"   to todo.orderInGroup,
             "createdAt"      to FieldValue.serverTimestamp()
         )
         return if (todo.id.isEmpty()) {
@@ -210,7 +215,82 @@ class FirebaseRepository {
     }
 
     suspend fun toggleTodo(todoId: String, completed: Boolean) {
-        todosCol().document(todoId).update("isCompleted", completed).await()
+        todosCol().document(todoId).update(mapOf(
+            "isCompleted" to completed,
+            "isFailed"    to false      // clear failed state when marking complete
+        )).await()
+    }
+
+    // Reset: mark incomplete, clear failed, clear timer start
+    suspend fun resetTodo(todoId: String) {
+        todosCol().document(todoId).update(mapOf(
+            "isCompleted"    to false,
+            "isFailed"       to false,
+            "timerStartedAt" to 0L
+        )).await()
+    }
+
+    // Mark a todo as failed (swipe left)
+    suspend fun markFailed(todoId: String) {
+        todosCol().document(todoId).update("isFailed", true).await()
+    }
+
+    // Manually start the timer — sets timerStartedAt to now
+    suspend fun startTimer(todoId: String) {
+        todosCol().document(todoId).update(
+            "timerStartedAt", System.currentTimeMillis()
+        ).await()
+    }
+
+    // ── Groups ─────────────────────────────────────────────────
+    suspend fun saveGroup(groupId: String, groupName: String) {
+        val data = mapOf(
+            "groupId"   to groupId,
+            "groupName" to groupName,
+            "userId"    to userId,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        if (groupId.isEmpty()) {
+            groupsCol().add(data).await()
+        } else {
+            groupsCol().document(groupId).set(data).await()
+        }
+    }
+
+    fun getGroups(): Flow<List<Map<String, String>>> {
+        val uid = userIdOrNull ?: return emptyFlow()
+        return callbackFlow {
+            val listener = db.collection("users").document(uid).collection("todoGroups")
+                .orderBy("createdAt", Query.Direction.ASCENDING)
+                .addSnapshotListener { snap, err ->
+                    if (err != null) { close(err); return@addSnapshotListener }
+                    val groups = snap?.documents?.map { doc ->
+                        // FIX (crash on 2nd group): saveGroup() always saves groupId = ""
+                        // for newly created groups, so doc.getString("groupId") returns
+                        // "" (empty string, not null) for EVERY group. The elvis (?:)
+                        // operator only triggers on null, not on "", so every group's
+                        // resolved groupId was "". TodoScreen's items(groups, key = {
+                        // it["groupId"] ?: "" }) then assigned the SAME Compose key ("")
+                        // to every group — Compose throws "duplicate key" on the 2nd
+                        // group and the app crashes.
+                        //
+                        // Fix: if the stored groupId is empty, fall back to doc.id
+                        // (the real Firestore document ID, which is always unique).
+                        val storedId = doc.getString("groupId") ?: ""
+                        val gId = if (storedId.isEmpty()) doc.id else storedId
+                        mapOf(
+                            "groupId"   to gId,
+                            "groupName" to (doc.getString("groupName") ?: "")
+                        )
+                    } ?: emptyList()
+                    trySend(groups)
+                }
+            awaitClose { listener.remove() }
+        }
+    }
+
+    suspend fun deleteGroup(groupId: String) {
+        groupsCol().document(groupId).delete().await()
     }
 
     suspend fun deleteTodo(todoId: String) {
