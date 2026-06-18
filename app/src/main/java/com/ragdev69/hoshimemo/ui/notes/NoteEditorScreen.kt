@@ -1,10 +1,9 @@
 package com.ragdev69.hoshimemo.ui.notes
 
-import androidx.compose.animation.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -51,6 +50,19 @@ fun NoteEditorScreen(
         label         = "content_fade"
     )
 
+    // ── Auto-save helper ─────────────────────────────────────────────────────
+    // Called both from the back arrow and the system back gesture.
+    // Only saves if there is actually something to save.
+    fun saveAndGoBack() {
+        if (title.isNotBlank() || content.isNotBlank()) {
+            viewModel.saveNote(Note(id = noteId, title = title, content = content))
+        }
+        onBack()
+    }
+
+    // Intercept the Android system back gesture / button
+    BackHandler { saveAndGoBack() }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -65,7 +77,7 @@ fun NoteEditorScreen(
                 TextButton(onClick = {
                     if (noteId.isNotEmpty()) viewModel.moveToTrash(noteId)
                     showDeleteDialog = false
-                    onBack()
+                    onBack()          // don't save — user is deleting
                 }) {
                     Text("Move", color = colors.accent)
                 }
@@ -92,7 +104,8 @@ fun NoteEditorScreen(
                     .padding(start = 8.dp, end = 16.dp, top = 50.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
+                // Back arrow now triggers auto-save
+                IconButton(onClick = { saveAndGoBack() }) {
                     Icon(
                         Icons.Filled.ArrowBack,
                         contentDescription = "Back",
@@ -187,24 +200,6 @@ fun NoteEditorScreen(
                 )
             )
         }
-
-        // ── Save FAB — always visible, never hides ────────────
-        FloatingActionButton(
-            onClick = {
-                if (title.isNotBlank() || content.isNotBlank()) {
-                    // FIX: go back immediately, save happens in background
-                    viewModel.saveNote(Note(id = noteId, title = title, content = content))
-                    onBack()
-                }
-            },
-            modifier       = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 24.dp),
-            containerColor = colors.primary,
-            contentColor   = Color.White,
-            shape          = CircleShape
-        ) {
-            Icon(Icons.Filled.Save, contentDescription = "Save")
-        }
+        // FAB removed — saving happens automatically on back
     }
 }

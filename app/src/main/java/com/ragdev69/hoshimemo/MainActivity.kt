@@ -22,6 +22,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.ragdev69.hoshimemo.ui.navigation.HoshiNavGraph
 import com.ragdev69.hoshimemo.ui.theme.AppTheme
 import com.ragdev69.hoshimemo.ui.theme.HoshiMemoTheme
@@ -31,7 +36,9 @@ import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
-    // Apply saved locale before Activity inflates any view
+    private var interstitialAd: InterstitialAd? = null
+    private var isAdShowing = false
+
     override fun attachBaseContext(newBase: Context) {
         val savedLang = newBase
             .getSharedPreferences("hoshi_locale", Context.MODE_PRIVATE)
@@ -43,12 +50,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // ---------------- ADMOB INIT ----------------
+//        MobileAds.initialize(this) {
+//            loadInterstitialAd()
+//        }
+
         setContent {
             val settingsViewModel: SettingsViewModel = viewModel()
             val currentTheme    by settingsViewModel.currentTheme.collectAsStateWithLifecycle()
             val currentLanguage by settingsViewModel.currentLanguage.collectAsStateWithLifecycle()
 
-            // When language changes → persist it then recreate so attachBaseContext re-runs
             var lastAppliedLang by remember { mutableStateOf("") }
             LaunchedEffect(currentLanguage) {
                 if (lastAppliedLang.isNotEmpty() && currentLanguage != lastAppliedLang) {
@@ -94,6 +105,32 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    // ---------------- INTERSTITIAL AD ----------------
+    private fun loadInterstitialAd() {
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(
+            this,
+            "ca-app-pub-3940256099942544/1033173712", // TEST AD UNIT
+            adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    showAdSafely()
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    interstitialAd = null
+                }
+            }
+        )
+    }
+
+    private fun showAdSafely() {
+        if (!isAdShowing) {
+            isAdShowing = true
+            interstitialAd?.show(this)
         }
     }
 }
