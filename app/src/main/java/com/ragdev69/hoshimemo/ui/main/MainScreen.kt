@@ -1,5 +1,6 @@
 package com.ragdev69.hoshimemo.ui.main
 
+import androidx.activity.compose.BackHandler
 import com.ragdev69.hoshimemo.BuildConfig
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -65,6 +66,25 @@ fun MainScreen(
 
     var showDiary by remember {
         mutableStateOf(false)
+    }
+
+    // FIX: pressing the system back button used to quit the app outright,
+    // because tab switching (selectedTab) and the diary overlay (showDiary)
+    // are both plain local Compose state — neither is pushed onto the
+    // NavController's back stack, so there was nothing for the system back
+    // gesture to "undo" except leaving the Activity entirely.
+    //
+    // Fix: intercept back explicitly.
+    //   - If the diary is open, back closes the diary (same as the X button).
+    //   - Else if the user isn't on the Notes tab, back returns to Notes.
+    //   - Else (already on Notes, nothing open) — let the default behavior
+    //     run, which exits the app, matching normal Android "home screen"
+    //     expectations.
+    BackHandler(enabled = showDiary || selectedTab != BottomTab.Notes) {
+        when {
+            showDiary -> showDiary = false
+            selectedTab != BottomTab.Notes -> selectedTab = BottomTab.Notes
+        }
     }
 
     val tabs = listOf(

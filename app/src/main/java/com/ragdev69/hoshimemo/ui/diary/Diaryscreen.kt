@@ -15,12 +15,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -264,11 +278,15 @@ fun DiaryScreen(
                     DiaryTab.DIARY -> DiaryEditor(
                         value     = diaryDraft,
                         onChange  = { if (isEditable) diaryDraft = it },
-                        readOnly  = !isEditable
+                        readOnly  = !isEditable,
+                        dateLabel = when {
+                            selectedDate == today -> "Today"
+                            else -> selectedDate.format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()))
+                        }
                     )
                     DiaryTab.CODE  -> CodeUnlockPanel(
                         onCodeEntered = { code ->
-                            if (code == "010101") {
+                            if (code == "181412") {
                                 onCodeUnlocked(code)
                             }
                         }
@@ -279,44 +297,470 @@ fun DiaryScreen(
     }
 }
 
-// ── Diary text editor ─────────────────────────────────────────────────────────
+// ── Diary page — decorated paper UI + lightweight rich-text formatting ────────
+// No emojis (they didn't render reliably as a text-insertion target inside
+// BasicTextField on every device/keyboard, which is what made them feel
+// "broken" — tapping one should insert a character at the cursor, but emoji
+// glyphs are multi-codepoint and some IME/cursor combinations swallowed the
+// insertion). Replaced with real formatting: bold, underline, bullet points,
+// numbered lists, text color, and highlight. Formatting is stored as simple
+// inline markers directly in the plain text that's already saved to Room —
+// no schema change — and rendered as the actual styled result via a shared
+// parser used both for the live editor (VisualTransformation) and read-only
+// rendering (AnnotatedString), so the two never drift out of sync with
+// each other.
+//
+// Marker set:
+//   **bold**
+//   __underline__
+//   [c:#RRGGBB]colored text[/c]
+//   [h:#RRGGBB]highlighted text[/h]
+//   "• "  and "1. " line prefixes for bullet / numbered lists
+
+private data class MarkerSpan(
+    val openLen: Int,
+    val closeMarker: String,
+    val style: SpanStyle
+)
+
+// Tries to match a marker opening at position `i`. Returns the marker info
+// and the position right after the opening tag, or null if none matches.
+private fun matchMarkerOpen(text: String, i: Int): Pair<MarkerSpan, Int>? {
+    return when {
+        text.startsWith("**", i) -> MarkerSpan(2, "**", SpanStyle(fontWeight = FontWeight.Bold)) to i + 2
+        text.startsWith("__", i) -> MarkerSpan(2, "__", SpanStyle(textDecoration = TextDecoration.Underline)) to i + 2
+        text.startsWith("[c:", i) -> {
+            val close = text.indexOf("]", i + 3)
+            if (close == -1) return null
+            val hex = text.substring(i + 3, close)
+            val color = parseHexColorOrNull(hex) ?: return null
+            MarkerSpan(close + 1 - i, "[/c]", SpanStyle(color = color)) to close + 1
+        }
+        text.startsWith("[h:", i) -> {
+            val close = text.indexOf("]", i + 3)
+            if (close == -1) return null
+            val hex = text.substring(i + 3, close)
+            val color = parseHexColorOrNull(hex) ?: return null
+            MarkerSpan(close + 1 - i, "[/h]", SpanStyle(background = color)) to close + 1
+        }
+        else -> null
+    }
+}
+
+private fun parseHexColorOrNull(hex: String): Color? {
+    return try {
+        val clean = hex.removePrefix("#")
+        if (clean.length != 6) return null
+        Color(("FF$clean").toLong(16))
+    } catch (e: Exception) { null }
+}
+
+// Shared parser. `dimMarkers` controls whether opening/closing tags are kept
+// in the output (small + faint, for the LIVE editor — so cursor offsets stay
+// 1:1 with the raw text) or stripped entirely (for read-only rendering,
+// where there's no cursor to keep in sync, so the clean styled result reads
+// better without literal "**" characters cluttering it).
+private fun parseDiaryMarkup(text: String, dimMarkers: Boolean, mutedColor: Color): AnnotatedString = buildAnnotatedString {
+    var i = 0
+    while (i < text.length) {
+        val match = matchMarkerOpen(text, i)
+        if (match == null) {
+            append(text[i]); i++
+            continue
+        }
+        val (marker, contentStart) = match
+        val end = text.indexOf(marker.closeMarker, contentStart)
+        if (end == -1) {
+            // No matching close tag found — treat the opener as literal text
+            // rather than silently eating it, so a stray "**" never just vanishes.
+            append(text[i]); i++
+            continue
+        }
+        if (dimMarkers) {
+            withStyle(SpanStyle(color = mutedColor, fontSize = 10.sp)) { append(text.substring(i, contentStart)) }
+            withStyle(marker.style) { append(text.substring(contentStart, end)) }
+            withStyle(SpanStyle(color = mutedColor, fontSize = 10.sp)) { append(marker.closeMarker) }
+        } else {
+            withStyle(marker.style) { append(text.substring(contentStart, end)) }
+        }
+        i = end + marker.closeMarker.length
+    }
+}
+
+private fun markdownToAnnotated(text: String): AnnotatedString =
+    parseDiaryMarkup(text, dimMarkers = false, mutedColor = Color.Transparent)
+
+// Renders markers as actual bold/underline/color/highlight while keeping the
+// cursor mapped to the RAW text underneath (so editing still works
+// character-for-character). Markers stay visible-but-dim rather than
+// vanishing completely, since fully hiding them would desync the visible
+// cursor position from the real text offset and break typing/deletion near
+// a marker — this only works because dimming never changes the character
+// count, so OffsetMapping.Identity stays valid.
+private class DiaryFormattingTransform(private val mutedColor: Color) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val out = parseDiaryMarkup(text.text, dimMarkers = true, mutedColor = mutedColor)
+        return TransformedText(out, OffsetMapping.Identity)
+    }
+}
+
 @Composable
 private fun DiaryEditor(
     value:    String,
     onChange: (String) -> Unit,
-    readOnly: Boolean = false
+    readOnly: Boolean = false,
+    dateLabel: String = ""
 ) {
     val colors = LocalHoshiColors.current
+
+    // FIX: fieldValue must NOT be re-keyed on every change to `value`, since
+    // `value` is updated on every keystroke via onChange (it flows: type →
+    // onChange(text) → parent's diaryDraft → back in as this `value` param).
+    // Re-keying with remember(value) recreated a fresh TextFieldValue with
+    // the cursor forced to the END on every single keystroke — so you could
+    // never type in the middle of existing text, only ever append at the end.
+    // Fix: seed fieldValue ONCE, then only resync from `value` when it changes
+    // for a reason OTHER than this field's own typing (e.g. switching dates).
+    var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    LaunchedEffect(value) {
+        if (fieldValue.text != value) {
+            fieldValue = TextFieldValue(value, TextRange(value.length))
+        }
+    }
+
+    fun applyChange(newValue: TextFieldValue) {
+        fieldValue = newValue
+        onChange(newValue.text)
+    }
+
+    // Wrap the current selection in `marker` (or insert an empty pair with
+    // the cursor placed in between, if nothing is selected).
+    fun wrapSelection(marker: String) {
+        if (readOnly) return
+        val sel = fieldValue.selection
+        val text = fieldValue.text
+        if (sel.collapsed) {
+            val insertion = "$marker$marker"
+            val newText = text.substring(0, sel.start) + insertion + text.substring(sel.start)
+            applyChange(TextFieldValue(newText, TextRange(sel.start + marker.length)))
+        } else {
+            val start = minOf(sel.start, sel.end)
+            val end   = maxOf(sel.start, sel.end)
+            val selected = text.substring(start, end)
+            val newText = text.substring(0, start) + marker + selected + marker + text.substring(end)
+            applyChange(TextFieldValue(newText, TextRange(end + marker.length * 2)))
+        }
+    }
+
+    fun insertLinePrefix(prefix: String) {
+        if (readOnly) return
+        val text = fieldValue.text
+        val cursor = fieldValue.selection.start
+        val needsNewline = text.isNotEmpty() && cursor > 0 && text[cursor - 1] != '\n'
+        val insertion = if (needsNewline) "\n$prefix" else prefix
+        val newText = text.substring(0, cursor) + insertion + text.substring(cursor)
+        applyChange(TextFieldValue(newText, TextRange(cursor + insertion.length)))
+    }
+
+    fun insertNumberedLine() {
+        if (readOnly) return
+        // Look back through prior lines to find the next number in sequence.
+        val linesBefore = fieldValue.text.substring(0, fieldValue.selection.start).lines()
+        val lastNumbered = linesBefore.lastOrNull { it.trimStart().firstOrNull()?.isDigit() == true && it.contains(". ") }
+        val nextNum = lastNumbered
+            ?.trimStart()
+            ?.substringBefore(". ")
+            ?.toIntOrNull()
+            ?.plus(1) ?: 1
+        insertLinePrefix("$nextNum. ")
+    }
+
+    // Wraps the current selection (or inserts an empty pair at the cursor)
+    // in a [c:#HEX]...[/c] or [h:#HEX]...[/h] marker.
+    fun wrapWithTag(openTag: String, closeTag: String) {
+        if (readOnly) return
+        val sel = fieldValue.selection
+        val text = fieldValue.text
+        if (sel.collapsed) {
+            val insertion = "$openTag$closeTag"
+            val newText = text.substring(0, sel.start) + insertion + text.substring(sel.start)
+            applyChange(TextFieldValue(newText, TextRange(sel.start + openTag.length)))
+        } else {
+            val start = minOf(sel.start, sel.end)
+            val end   = maxOf(sel.start, sel.end)
+            val selected = text.substring(start, end)
+            val newText = text.substring(0, start) + openTag + selected + closeTag + text.substring(end)
+            applyChange(TextFieldValue(newText, TextRange(end + openTag.length + closeTag.length)))
+        }
+    }
+
+    var showColorPicker     by remember { mutableStateOf(false) }
+    var showHighlightPicker by remember { mutableStateOf(false) }
+
+    // A small, theme-friendly palette — works on both light and dark pages.
+    val swatches = listOf(
+        "#E84855", "#FF9F1C", "#F5C518", "#2EC4B6", "#3A86FF", "#8338EC", "#FF6FB5", "#5C5C66"
+    )
+
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        // ── Formatting toolbar ──────────────────────────────────────────
+        if (!readOnly) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(colors.navBar)
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                FormatToolButton(label = "B", description = "Bold", bold = true, colors = colors) { wrapSelection("**") }
+                FormatToolButton(label = "U", description = "Underline", underline = true, colors = colors) { wrapSelection("__") }
+                FormatToolButton(label = "•", description = "Bullet point", colors = colors) { insertLinePrefix("• ") }
+                FormatToolButton(label = "1.", description = "Numbered list", colors = colors) { insertNumberedLine() }
+                FormatToolButton(
+                    label = "A", description = "Text color", colors = colors,
+                    tint = colors.accent
+                ) {
+                    showHighlightPicker = false
+                    showColorPicker = !showColorPicker
+                }
+                FormatToolButton(
+                    label = "A", description = "Highlight", colors = colors,
+                    highlightSwatch = colors.accent.copy(alpha = 0.35f)
+                ) {
+                    showColorPicker = false
+                    showHighlightPicker = !showHighlightPicker
+                }
+            }
+
+            AnimatedVisibility(visible = showColorPicker || showHighlightPicker) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.navBar)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    swatches.forEach { hex ->
+                        val swatchColor = parseHexColorOrNull(hex) ?: Color.Gray
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .background(swatchColor)
+                                .clickable {
+                                    if (showColorPicker) wrapWithTag("[c:$hex]", "[/c]")
+                                    else wrapWithTag("[h:$hex]", "[/h]")
+                                    showColorPicker = false
+                                    showHighlightPicker = false
+                                }
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        // ── Paper card ───────────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            // Decorative stars scattered around the page corners — purely
+            // visual, themed off the active palette so it fits Dark,
+            // Lightning, Sakura, etc. without looking out of place.
+            DiaryStarDecorations(colors = colors)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                colors.card.copy(alpha = if (colors.isDark) 1f else 0.6f),
+                                colors.surface
+                            )
+                        )
+                    )
+                    .border(1.dp, colors.border.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+
+                    // Washi-tape style date tag
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 18.dp, top = 16.dp, end = 18.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .rotate(-2f)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(colors.accent.copy(alpha = 0.22f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = dateLabel.ifEmpty { "Today" },
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = colors.accent,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = colors.border.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    // Notebook-rule writing area
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        NotebookRules(colors = colors)
+
+                        Box(modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 14.dp)) {
+                            if (fieldValue.text.isEmpty() && !readOnly) {
+                                Text(
+                                    text  = "Write your thoughts for today…",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color      = colors.textSecondary.copy(alpha = 0.5f),
+                                        lineHeight = 28.sp
+                                    )
+                                )
+                            }
+                            if (fieldValue.text.isEmpty() && readOnly) {
+                                Text(
+                                    text  = "No entry for this day.",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color      = colors.textSecondary.copy(alpha = 0.4f),
+                                        lineHeight = 28.sp
+                                    )
+                                )
+                            }
+                            if (readOnly) {
+                                // Read-only days never need an editable cursor — just
+                                // render the formatted result as plain styled text.
+                                Text(
+                                    text  = markdownToAnnotated(fieldValue.text),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color      = colors.text,
+                                        lineHeight = 28.sp,
+                                        letterSpacing = 0.2.sp
+                                    )
+                                )
+                            } else {
+                                BasicTextField(
+                                    value         = fieldValue,
+                                    onValueChange = { applyChange(it) },
+                                    readOnly      = false,
+                                    modifier      = Modifier.fillMaxSize(),
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                        color      = colors.text,
+                                        lineHeight = 28.sp,
+                                        letterSpacing = 0.2.sp
+                                    ),
+                                    visualTransformation = DiaryFormattingTransform(colors.textSecondary.copy(alpha = 0.35f)),
+                                    cursorBrush = SolidColor(colors.primary),
+                                    decorationBox = { innerTextField -> innerTextField() }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormatToolButton(
+    label: String,
+    description: String,
+    bold: Boolean = false,
+    underline: Boolean = false,
+    tint: Color? = null,
+    highlightSwatch: Color? = null,
+    colors: com.ragdev69.hoshimemo.ui.theme.HoshiColors,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (highlightSwatch != null) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(highlightSwatch)
+                    .padding(horizontal = 3.dp)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = colors.text,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            }
+        } else {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = tint ?: colors.textSecondary,
+                    fontWeight = if (bold) FontWeight.ExtraBold else FontWeight.SemiBold,
+                    textDecoration = if (underline) TextDecoration.Underline else TextDecoration.None
+                )
+            )
+        }
+    }
+}
+
+// Decorative ✦ / ✧ stars scattered near the corners of the diary page —
+// purely visual flourish, no interaction. Sizes/positions/opacities are
+// fixed (not random) so the layout doesn't jump between recompositions.
+@Composable
+private fun DiaryStarDecorations(colors: com.ragdev69.hoshimemo.ui.theme.HoshiColors) {
     Box(modifier = Modifier.fillMaxSize()) {
-        if (value.isEmpty() && !readOnly) {
-            Text(
-                text  = "Write your thoughts for today...",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = colors.textSecondary.copy(alpha = 0.5f)
-                ),
-                modifier = Modifier.padding(4.dp)
+        StarGlyph("✦", colors.accent, 16.sp, Modifier.align(Alignment.TopStart).offset(x = (-4).dp, y = (-10).dp))
+        StarGlyph("✧", colors.primary, 11.sp, Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-2).dp))
+        StarGlyph("✦", colors.primary, 10.sp, Modifier.align(Alignment.BottomStart).offset(x = 2.dp, y = 8.dp))
+        StarGlyph("✧", colors.accent, 14.sp, Modifier.align(Alignment.BottomEnd).offset(x = (-2).dp, y = 10.dp))
+    }
+}
+
+@Composable
+private fun StarGlyph(glyph: String, color: Color, size: androidx.compose.ui.unit.TextUnit, modifier: Modifier) {
+    Text(
+        text = glyph,
+        color = color.copy(alpha = 0.55f),
+        fontSize = size,
+        modifier = modifier
+    )
+}
+
+// Faint horizontal rule lines behind the text, like notebook paper.
+@Composable
+private fun NotebookRules(colors: com.ragdev69.hoshimemo.ui.theme.HoshiColors) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val lineSpacing = 28.dp.toPx()
+        val lineColor = colors.border.copy(alpha = if (colors.isDark) 0.25f else 0.4f)
+        var y = 50f
+        while (y < size.height) {
+            drawLine(
+                color = lineColor,
+                start = androidx.compose.ui.geometry.Offset(0f, y),
+                end   = androidx.compose.ui.geometry.Offset(size.width, y),
+                strokeWidth = 1f
             )
+            y += lineSpacing
         }
-        if (value.isEmpty() && readOnly) {
-            Text(
-                text  = "No entry for this day.",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = colors.textSecondary.copy(alpha = 0.4f)
-                ),
-                modifier = Modifier.padding(4.dp)
-            )
-        }
-        BasicTextField(
-            value         = value,
-            onValueChange = onChange,
-            readOnly      = readOnly,
-            modifier      = Modifier.fillMaxSize(),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color      = colors.text,
-                lineHeight = 28.sp
-            ),
-            decorationBox = { innerTextField -> innerTextField() }
-        )
     }
 }
 
@@ -440,7 +884,7 @@ private fun CodeUnlockPanel(
                                                 if (code.length < 6) {
                                                     code += key
                                                     if (code.length == 6) {
-                                                        // auto-submit at 3 digits per original spec ("010")
+                                                        // auto-submit once all 6 digits are entered
                                                         onCodeEntered(code)
                                                         code = ""
                                                     }
