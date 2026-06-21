@@ -32,16 +32,16 @@ val Fantasy_TextSecondary = Color(0xFF9A7CC0)
 val Fantasy_Border        = Color(0xFF3A1A55)
 val Fantasy_NavBar        = Color(0xFF0A0518)
 
-// ── Anime Mode ────────────────────────────────────────────────
-val Anime_Background    = Color(0xFF0A0E1A)
-val Anime_Surface       = Color(0xFF111827)
-val Anime_Card          = Color(0xFF141E2E)
-val Anime_Primary       = Color(0xFF00D4FF)
-val Anime_Accent        = Color(0xFFFF4081)
-val Anime_Text          = Color(0xFFE8F4FD)
-val Anime_TextSecondary = Color(0xFF7AADCC)
-val Anime_Border        = Color(0xFF1A2840)
-val Anime_NavBar        = Color(0xFF060A10)
+// ── Lightning Mode ────────────────────────────────────────────
+val Lightning_Background    = Color(0xFF0A0A00)
+val Lightning_Surface       = Color(0xFF141400)
+val Lightning_Card          = Color(0xFF1C1C00)
+val Lightning_Primary       = Color(0xFFFFD700)
+val Lightning_Accent        = Color(0xFFFFAA00)
+val Lightning_Text          = Color(0xFFFFFDE7)
+val Lightning_TextSecondary = Color(0xFFB8A800)
+val Lightning_Border        = Color(0xFF2E2A00)
+val Lightning_NavBar        = Color(0xFF080800)
 
 // ── Sakura Mode ───────────────────────────────────────────────
 val Sakura_Background    = Color(0xFFFFF5F8)

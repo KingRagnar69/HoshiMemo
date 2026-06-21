@@ -267,7 +267,11 @@ fun DiaryScreen(
                         readOnly  = !isEditable
                     )
                     DiaryTab.CODE  -> CodeUnlockPanel(
-                        onCodeEntered = { code -> onCodeUnlocked(code) }
+                        onCodeEntered = { code ->
+                            if (code == "010101") {
+                                onCodeUnlocked(code)
+                            }
+                        }
                     )
                 }
             }

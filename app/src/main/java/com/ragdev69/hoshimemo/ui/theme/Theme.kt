@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.Color
 enum class AppTheme(val displayName: String, val emoji: String) {
     DARK("Dark", "🌙"),
     FANTASY("Fantasy", "🧚"),
-    ANIME("Anime", "⚡"),
+    ANIME("Lightning", "⚡"),
     SAKURA("Sakura", "🌸"),
     COSMIC("Cosmic", "🌌"),
     GREIGE("Greige", "🍂")
@@ -58,15 +58,15 @@ fun getHoshiColors(theme: AppTheme): HoshiColors = when (theme) {
         isDark        = true
     )
     AppTheme.ANIME -> HoshiColors(
-        background    = Anime_Background,
-        surface       = Anime_Surface,
-        card          = Anime_Card,
-        primary       = Anime_Primary,
-        accent        = Anime_Accent,
-        text          = Anime_Text,
-        textSecondary = Anime_TextSecondary,
-        border        = Anime_Border,
-        navBar        = Anime_NavBar,
+        background    = Lightning_Background,
+        surface       = Lightning_Surface,
+        card          = Lightning_Card,
+        primary       = Lightning_Primary,
+        accent        = Lightning_Accent,
+        text          = Lightning_Text,
+        textSecondary = Lightning_TextSecondary,
+        border        = Lightning_Border,
+        navBar        = Lightning_NavBar,
         isDark        = true
     )
     AppTheme.SAKURA -> HoshiColors(

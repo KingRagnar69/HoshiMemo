@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -70,6 +71,50 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
     var showGroupDialog  by remember { mutableStateOf(false) }
     var newGroupName     by remember { mutableStateOf("") }
     var expandedGroupId  by remember { mutableStateOf<String?>(null) }
+
+    // ── Multi-select (long-press to enter, tap to toggle, delete selected) ──
+    var selectionMode    by remember { mutableStateOf(false) }
+    var selectedIds       by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showDeleteSelectedDialog by remember { mutableStateOf(false) }
+
+    fun toggleSelected(id: String) {
+        selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+        if (selectedIds.isEmpty()) selectionMode = false
+    }
+    fun enterSelectionMode(id: String) {
+        selectionMode = true
+        selectedIds = setOf(id)
+    }
+    fun exitSelectionMode() {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+
+    if (showDeleteSelectedDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteSelectedDialog = false },
+            containerColor   = colors.surface,
+            shape            = RoundedCornerShape(20.dp),
+            title = { Text("Delete ${selectedIds.size} task${if (selectedIds.size > 1) "s" else ""}?", color = colors.text, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+            text  = { Text("This can't be undone.", color = colors.textSecondary) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        selectedIds.forEach { viewModel.deleteTodo(it) }
+                        showDeleteSelectedDialog = false
+                        exitSelectionMode()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4444))
+                ) { Text("Delete", color = Color.White, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteSelectedDialog = false }) {
+                    Text("Cancel", color = colors.textSecondary)
+                }
+            }
+        )
+    }
 
     if (showGroupDialog) {
         AlertDialog(
@@ -288,21 +333,40 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                 .background(Brush.verticalGradient(listOf(colors.surface, colors.background)))
                 .padding(start = 20.dp, end = 20.dp, top = 52.dp, bottom = 16.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.todo_title),
-                        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.text),
-                        modifier = Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(colors.primary.copy(alpha = 0.13f))
-                            .border(1.dp, colors.primary.copy(alpha = 0.35f), RoundedCornerShape(50.dp))
-                            .clickable { showGroupDialog = true }
-                            .padding(horizontal = 14.dp, vertical = 7.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Icon(Icons.Filled.CreateNewFolder, null, tint = colors.primary, modifier = Modifier.size(15.dp))
-                            Text("New Group", color = colors.primary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                if (selectionMode) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { exitSelectionMode() }) {
+                            Icon(Icons.Filled.Close, "Cancel selection", tint = colors.text)
+                        }
+                        Text(
+                            "${selectedIds.size} selected",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = colors.text),
+                            modifier = Modifier.weight(1f).padding(start = 4.dp)
+                        )
+                        IconButton(
+                            onClick = { if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true },
+                            enabled = selectedIds.isNotEmpty()
+                        ) {
+                            Icon(Icons.Filled.Delete, "Delete selected", tint = Color(0xFFFF4444))
+                        }
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.todo_title),
+                            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.text),
+                            modifier = Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50.dp))
+                                .background(colors.primary.copy(alpha = 0.13f))
+                                .border(1.dp, colors.primary.copy(alpha = 0.35f), RoundedCornerShape(50.dp))
+                                .clickable { showGroupDialog = true }
+                                .padding(horizontal = 14.dp, vertical = 7.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Icon(Icons.Filled.CreateNewFolder, null, tint = colors.primary, modifier = Modifier.size(15.dp))
+                                Text("New Group", color = colors.primary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                 }
@@ -378,7 +442,11 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                                     justCompleted = justCompleted, justFailed = justFailed,
                                     expiredDismissed = expiredDismissed,
                                     onExpiredDismissed = { viewModel.markExpiredDialogDismissed(todo.id) },
-                                    showExpiredDialog = true
+                                    showExpiredDialog = true,
+                                    selectionMode = selectionMode,
+                                    isSelected = todo.id in selectedIds,
+                                    onLongPress = { enterSelectionMode(todo.id) },
+                                    onTapSelect = { toggleSelected(todo.id) }
                                 )
                             }
                         }
@@ -398,7 +466,11 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                                 justCompleted = justCompleted, justFailed = justFailed,
                                 expiredDismissed = expiredDismissed,
                                 onExpiredDismissed = { viewModel.markExpiredDialogDismissed(todo.id) },
-                                showExpiredDialog = false
+                                showExpiredDialog = false,
+                                selectionMode = selectionMode,
+                                isSelected = todo.id in selectedIds,
+                                onLongPress = { enterSelectionMode(todo.id) },
+                                onTapSelect = { toggleSelected(todo.id) }
                             )
                         }
                     }
@@ -417,7 +489,11 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                                 justCompleted = justCompleted, justFailed = justFailed,
                                 expiredDismissed = expiredDismissed,
                                 onExpiredDismissed = { viewModel.markExpiredDialogDismissed(todo.id) },
-                                showExpiredDialog = false
+                                showExpiredDialog = false,
+                                selectionMode = selectionMode,
+                                isSelected = todo.id in selectedIds,
+                                onLongPress = { enterSelectionMode(todo.id) },
+                                onTapSelect = { toggleSelected(todo.id) }
                             )
                         }
                     }
@@ -467,52 +543,106 @@ private fun GroupCard(
     justCompleted: Set<String>,
     justFailed: Set<String>
 ) {
-    val pendingSorted = groupTasks.filter { !it.isCompleted && !it.isFailed }.sortedBy { it.orderInGroup }
-    val done   = groupTasks.count { it.isCompleted }
-    val failed = groupTasks.count { it.isFailed }
+    // ── FIX: fully local-first engine ──────────────────────────────────────
+    // Root cause of "only task 1 runs / order wrong / last task never
+    // triggers / progress doesn't update": the old engine waited on
+    // Firestore round-trips (via the `groupTasks` parameter, which only
+    // updates once a snapshot listener delivers a new list) to decide
+    // both WHEN a task's timer had actually started and WHAT the next
+    // task was. Firestore writes are fire-and-forget and can arrive late,
+    // out of order, or be momentarily stale right after a local advance —
+    // so the engine would stall on task 1, misjudge ordering, or never
+    // see task 3 as "next" because the snapshot hadn't caught up yet.
+    //
+    // Fix: track completed/failed task IDs and the active task ID ENTIRELY
+    // in local state, keyed only to the group's identity (its task ID set
+    // doesn't change across completions, only flags do — so we seed once
+    // and then own the state ourselves). Firestore writes still happen,
+    // but purely as background persistence — they never gate sequencing,
+    // never gate "what's next", and never gate the progress counter.
+    val groupKey = remember(groupTasks.map { it.id }.sorted()) { groupTasks.map { it.id }.sorted() }
 
-    // Local engine state — which pending task (by id) is currently "active"
-    // (i.e. its timer is the one actually running right now).
-    var activeId by remember(groupTasks.map { it.id }) {
-        mutableStateOf(pendingSorted.firstOrNull { it.timerStartedAt > 0L }?.id ?: pendingSorted.firstOrNull()?.id)
+    // Local overrides — task IDs this engine has already advanced past,
+    // independent of whether the Firestore write for them has landed yet.
+    var localDoneIds by remember(groupKey) {
+        mutableStateOf(groupTasks.filter { it.isCompleted }.map { it.id }.toSet())
     }
-    // Local countdown, ticked every second purely in UI state — never blocked by Firestore.
+    var localFailedIds by remember(groupKey) {
+        mutableStateOf(groupTasks.filter { it.isFailed }.map { it.id }.toSet())
+    }
+
+    // Merge: a task counts as done/failed if EITHER Firestore says so OR
+    // our local engine has already moved past it.
+    val mergedTasks = remember(groupTasks, localDoneIds, localFailedIds) {
+        groupTasks.map { t ->
+            when {
+                t.id in localDoneIds && !t.isCompleted -> t.copy(isCompleted = true)
+                t.id in localFailedIds && !t.isFailed   -> t.copy(isFailed = true)
+                else -> t
+            }
+        }
+    }
+
+    val pendingSorted = mergedTasks.filter { !it.isCompleted && !it.isFailed }.sortedBy { it.orderInGroup }
+    val done   = mergedTasks.count { it.isCompleted }
+    val failed = mergedTasks.count { it.isFailed }
+
+    // FIX: group was auto-starting itself whenever it rendered with a
+    // pending task — including right after creating a brand-new group,
+    // adding a fresh task to an idle group, or resetting a finished group.
+    // None of those are "the user pressed start." We now track an explicit
+    // `started` flag, seeded to false per group identity, that ONLY a
+    // deliberate tap on the Start button flips to true. Nothing else
+    // (recomposition, a new task arriving, a reset) is allowed to flip it.
+    var started by remember(groupKey) { mutableStateOf(false) }
+
+    // Which pending task is currently "active" (its timer is the one
+    // actually running). Only meaningful once `started` is true.
+    var activeId by remember(groupKey) { mutableStateOf<String?>(null) }
+
+    val activeTask = mergedTasks.find { it.id == activeId }
+
     var localRemaining by remember(activeId) {
-        mutableStateOf(groupTasks.find { it.id == activeId }?.remainingSeconds() ?: 0L)
+        mutableStateOf(mergedTasks.find { it.id == activeId }?.timerSeconds ?: 0L)
     }
 
-    val activeTask = groupTasks.find { it.id == activeId }
-    val hasStarted = activeTask?.let { it.timerStartedAt > 0L } == true
+    // The engine loop — entirely local. Only runs once `started` is true
+    // AND there is an active task. Re-launches when activeId changes.
+    LaunchedEffect(activeId, started) {
+        if (!started) return@LaunchedEffect
+        val id = activeId ?: return@LaunchedEffect
+        val task = groupTasks.find { it.id == id } ?: return@LaunchedEffect
+        if (task.timerSeconds <= 0L) {
+            // No timer on this task — nothing to count down. Treat it as
+            // immediately done so the queue doesn't stall waiting forever.
+            localDoneIds = localDoneIds + id
+            onComplete(id)
+            val next = pendingSorted.firstOrNull { it.id != id }
+            activeId = next?.id
+            if (next == null) started = false
+            return@LaunchedEffect
+        }
 
-    // The engine loop. Re-launches whenever activeId changes (i.e. whenever
-    // we advance to a new task). Ticks once per second; the instant the
-    // countdown reaches 0 it marks the CURRENT task complete (fire-and-forget)
-    // and immediately switches activeId to the next pending task in the SAME
-    // coroutine iteration — no delay, no round trip.
-    LaunchedEffect(activeId, hasStarted) {
-        if (activeId == null || !hasStarted) return@LaunchedEffect
-        val task = groupTasks.find { it.id == activeId } ?: return@LaunchedEffect
-        if (task.timerSeconds <= 0L) return@LaunchedEffect
+        // Fire the "started" write in the background so other devices /
+        // future sessions see it — but don't wait for it.
+        onStartTimer(id)
 
-        while (true) {
-            val remaining = task.remainingSeconds()
-            localRemaining = remaining
-            if (remaining <= 0L) break
+        var remaining = task.timerSeconds
+        localRemaining = remaining
+        while (remaining > 0L) {
             delay(1000L)
+            remaining -= 1L
+            localRemaining = remaining
         }
-        // Timer just hit zero for `task`. Mark it complete (write happens in
-        // background, we do NOT wait for it) and instantly move on.
-        onComplete(task.id)
-        val next = groupTasks
-            .filter { it.id != task.id && !it.isCompleted && !it.isFailed }
-            .sortedBy { it.orderInGroup }
-            .firstOrNull()
-        if (next != null) {
-            onStartTimer(next.id)   // fire-and-forget background write
-            activeId = next.id      // advance locally — instant, no wait
-        } else {
-            activeId = null
-        }
+
+        // Timer hit zero — advance LOCALLY first (instant, no network
+        // dependency), then fire the completion write in the background.
+        localDoneIds = localDoneIds + id
+        onComplete(id)
+
+        val next = pendingSorted.firstOrNull { it.id != id }
+        activeId = next?.id
+        if (next == null) started = false   // sequence finished
     }
 
     Card(
@@ -535,12 +665,12 @@ private fun GroupCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(groupName, color = colors.text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                    Text("$done/${groupTasks.size} done · $failed failed", color = colors.textSecondary, style = MaterialTheme.typography.labelSmall)
+                    Text("$done/${mergedTasks.size} done · $failed failed", color = colors.textSecondary, style = MaterialTheme.typography.labelSmall)
                 }
                 Box(modifier = Modifier.width(60.dp).height(6.dp).clip(RoundedCornerShape(3.dp)).background(colors.border)) {
-                    if (groupTasks.isNotEmpty()) {
+                    if (mergedTasks.isNotEmpty()) {
                         Box(modifier = Modifier.fillMaxHeight()
-                            .fillMaxWidth(done.toFloat() / groupTasks.size)
+                            .fillMaxWidth(done.toFloat() / mergedTasks.size)
                             .clip(RoundedCornerShape(3.dp))
                             .background(Brush.horizontalGradient(listOf(colors.primary, colors.accent))))
                     }
@@ -550,17 +680,26 @@ private fun GroupCard(
                 IconButton(onClick = onAddTodoToGroup, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.Add, "Add task", tint = colors.primary, modifier = Modifier.size(18.dp))
                 }
-                if (activeTask != null && !hasStarted && activeTask.timerSeconds > 0L) {
+                if (!started && pendingSorted.isNotEmpty()) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(colors.primary.copy(alpha = 0.18f))
-                            .clickable { onStartTimer(activeTask.id) }
+                            .clickable {
+                                activeId = pendingSorted.firstOrNull()?.id
+                                started = activeId != null
+                            }
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) { Text("START", color = colors.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                     Spacer(modifier = Modifier.width(2.dp))
                 }
-                IconButton(onClick = onResetGroup, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = {
+                    started = false
+                    activeId = null
+                    localDoneIds = emptySet()
+                    localFailedIds = emptySet()
+                    onResetGroup()
+                }, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.Refresh, "Reset group", tint = colors.primary.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
                 }
                 IconButton(onClick = onDeleteGroup, modifier = Modifier.size(32.dp)) {
@@ -571,18 +710,17 @@ private fun GroupCard(
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    groupTasks.sortedBy { it.orderInGroup }.forEach { todo ->
+                    mergedTasks.sortedBy { it.orderInGroup }.forEach { todo ->
                         val isActiveTimer = todo.id == activeId
                         GroupTaskRow(
                             todo = todo, colors = colors,
-                            displayRemaining = if (isActiveTimer) localRemaining else todo.remainingSeconds(),
-                            onComplete = { onComplete(todo.id) },
-                            onFail = { onFail(todo.id) },
+                            displayRemaining = if (isActiveTimer) localRemaining else todo.timerSeconds,
+                            isActive = isActiveTimer && !todo.isCompleted && !todo.isFailed,
                             onDelete = { onDelete(todo.id) },
-                            onReset = { onReset(todo.id) },
-                            onStartTimer = {
-                                onStartTimer(todo.id)
-                                activeId = todo.id
+                            onReset = {
+                                localDoneIds = localDoneIds - todo.id
+                                localFailedIds = localFailedIds - todo.id
+                                onReset(todo.id)
                             },
                             justCompleted = justCompleted, justFailed = justFailed
                         )
@@ -593,19 +731,18 @@ private fun GroupCard(
     }
 }
 
-// Simplified row used only inside a group — no swipe gestures (avoids
-// double-counting completion since the timer engine drives completion),
-// but still allows manual complete/fail/reset via tap, and shows live countdown.
+// Simplified row used only inside a group — no swipe gestures, no manual
+// complete/fail/start buttons. The group's timer engine drives everything
+// automatically: the active task counts down on its own and the next one
+// starts the instant the current one finishes. Reset/delete remain available.
 @Composable
 private fun GroupTaskRow(
     todo: TodoItem,
     colors: HoshiColors,
     displayRemaining: Long,
-    onComplete: () -> Unit,
-    onFail: () -> Unit,
+    isActive: Boolean,
     onDelete: () -> Unit,
     onReset: () -> Unit,
-    onStartTimer: () -> Unit,
     justCompleted: Set<String>,
     justFailed: Set<String>
 ) {
@@ -616,17 +753,18 @@ private fun GroupTaskRow(
     val bg = when {
         isJustCompleted -> lerp(colors.card, Color(0xFF4CAF50).copy(alpha = 0.25f), burstFraction)
         isJustFailed    -> lerp(colors.card, Color(0xFFFF4444).copy(alpha = 0.25f), burstFraction)
+        isActive        -> lerp(colors.card, colors.primary.copy(alpha = 0.10f), 1f)
         else            -> lerp(colors.card, colors.primary.copy(alpha = 0.07f), doneFraction)
     }
     val cardScale by animateFloatAsState(if (isJustCompleted || isJustFailed) 1.04f else 1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow), label = "scale")
 
     val hasTimer = todo.timerSeconds > 0L
-    val started  = todo.timerStartedAt > 0L
 
     Card(
         modifier  = Modifier.fillMaxWidth().scale(cardScale),
         shape     = RoundedCornerShape(16.dp),
         colors    = CardDefaults.cardColors(containerColor = bg),
+        border    = if (isActive && !todo.isCompleted && !todo.isFailed) BorderStroke(1.dp, colors.primary.copy(alpha = 0.5f)) else null,
         elevation = CardDefaults.cardElevation(if (todo.isCompleted || todo.isFailed) 0.dp else 2.dp)
     ) {
         Row(
@@ -644,6 +782,7 @@ private fun GroupTaskRow(
                     when {
                         todo.isCompleted -> Color(0xFF4CAF50).copy(alpha = 0.18f)
                         todo.isFailed    -> Color(0xFFFF4444).copy(alpha = 0.18f)
+                        isActive         -> colors.primary.copy(alpha = 0.18f)
                         else             -> colors.border.copy(alpha = 0.3f)
                     }
                 ),
@@ -652,6 +791,7 @@ private fun GroupTaskRow(
                 when {
                     todo.isCompleted -> Icon(Icons.Filled.Check, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
                     todo.isFailed    -> Icon(Icons.Filled.Close, null, tint = Color(0xFFFF4444), modifier = Modifier.size(16.dp))
+                    isActive         -> Icon(Icons.Filled.PlayArrow, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                     else             -> Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(colors.textSecondary.copy(alpha = 0.4f)))
                 }
             }
@@ -663,7 +803,7 @@ private fun GroupTaskRow(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = when { todo.isCompleted -> colors.textSecondary; todo.isFailed -> Color(0xFFFF4444).copy(alpha = 0.8f); else -> colors.text },
                         textDecoration = if (todo.isCompleted || todo.isFailed) TextDecoration.LineThrough else TextDecoration.None,
-                        fontWeight = if (todo.isCompleted || todo.isFailed) FontWeight.Normal else FontWeight.SemiBold
+                        fontWeight = if (todo.isCompleted || todo.isFailed) FontWeight.Normal else if (isActive) FontWeight.Bold else FontWeight.SemiBold
                     )
                 )
                 if (hasTimer) {
@@ -671,41 +811,26 @@ private fun GroupTaskRow(
                     val chipColor = when {
                         todo.isCompleted -> Color(0xFF4CAF50)
                         todo.isFailed    -> Color(0xFFFF4444)
-                        !started         -> colors.textSecondary
+                        !isActive        -> colors.textSecondary
                         displayRemaining <= 10L -> Color(0xFFFF4444)
                         displayRemaining <= 60L -> Color(0xFFFFAA00)
                         else             -> colors.primary
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = when {
-                                todo.isCompleted -> "✓ ${formatTime(todo.timerSeconds)}"
-                                todo.isFailed    -> "✗ ${formatTime(todo.timerSeconds)}"
-                                !started         -> "⏱ ${formatTime(todo.timerSeconds)}"
-                                else             -> "⏱ ${formatTime(displayRemaining)}"
-                            },
-                            color = chipColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold
-                        )
-                        if (!started && !todo.isCompleted && !todo.isFailed) {
-                            Box(
-                                modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(colors.primary.copy(alpha = 0.2f))
-                                    .clickable { onStartTimer() }.padding(horizontal = 5.dp, vertical = 1.dp)
-                            ) { Text("START", color = colors.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
-                        }
-                    }
+                    Text(
+                        text = when {
+                            todo.isCompleted -> "✓ ${formatTime(todo.timerSeconds)}"
+                            todo.isFailed    -> "✗ ${formatTime(todo.timerSeconds)}"
+                            isActive         -> "⏱ ${formatTime(displayRemaining)} · running"
+                            else             -> "⏳ ${formatTime(todo.timerSeconds)} · waiting"
+                        },
+                        color = chipColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
             if (todo.isCompleted || todo.isFailed) {
                 IconButton(onClick = onReset, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Filled.Refresh, "Reset", tint = colors.primary.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
-                }
-            } else {
-                IconButton(onClick = onComplete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.Check, "Complete", tint = Color(0xFF4CAF50).copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
-                }
-                IconButton(onClick = onFail, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Filled.Close, "Fail", tint = Color(0xFFFF4444).copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
                 }
             }
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
@@ -726,7 +851,11 @@ fun SwipeableTodoCard(
     onStartTimer: () -> Unit, onMarkComplete: () -> Unit,
     justCompleted: Set<String>, justFailed: Set<String>,
     expiredDismissed: Set<String>, onExpiredDismissed: () -> Unit,
-    showExpiredDialog: Boolean
+    showExpiredDialog: Boolean,
+    selectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongPress: () -> Unit = {},
+    onTapSelect: () -> Unit = {}
 ) {
     var offsetX      by remember(todo.id) { mutableStateOf(0f) }
     var swiping      by remember(todo.id) { mutableStateOf(false) }
@@ -819,8 +948,14 @@ fun SwipeableTodoCard(
         Card(
             modifier  = Modifier.fillMaxWidth()
                 .offset { IntOffset(animOffset.roundToInt(), 0) }
-                .pointerInput(todo.id, todo.isCompleted, todo.isFailed) {
-                    if (todo.isCompleted || todo.isFailed) return@pointerInput
+                .pointerInput(todo.id, todo.isCompleted, todo.isFailed, selectionMode) {
+                    detectTapGestures(
+                        onLongPress = { if (!selectionMode) onLongPress() },
+                        onTap = { if (selectionMode) onTapSelect() }
+                    )
+                }
+                .pointerInput(todo.id, todo.isCompleted, todo.isFailed, selectionMode) {
+                    if (selectionMode || todo.isCompleted || todo.isFailed) return@pointerInput
                     detectHorizontalDragGestures(
                         onDragStart  = { swiping = true },
                         onDragEnd    = {
@@ -835,13 +970,25 @@ fun SwipeableTodoCard(
                     ) { _, dragAmount -> offsetX = (offsetX + dragAmount).coerceIn(-threshold * 1.3f, threshold * 1.3f) }
                 },
             shape     = RoundedCornerShape(18.dp),
-            colors    = CardDefaults.cardColors(containerColor = finalBg),
+            colors    = CardDefaults.cardColors(containerColor = if (isSelected) colors.primary.copy(alpha = 0.16f) else finalBg),
+            border    = if (isSelected) BorderStroke(1.5.dp, colors.primary) else null,
             elevation = CardDefaults.cardElevation(if (todo.isCompleted || todo.isFailed) 0.dp else 3.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 6.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (selectionMode) {
+                    Box(
+                        modifier = Modifier.size(22.dp).clip(CircleShape)
+                            .background(if (isSelected) colors.primary else Color.Transparent)
+                            .border(1.5.dp, if (isSelected) colors.primary else colors.border, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                }
                 val priorityColor = when (todo.priority) { 2 -> Color(0xFFFF4444); 1 -> Color(0xFFFFAA00); else -> Color.Transparent }
                 if (todo.priority > 0) {
                     Box(modifier = Modifier.width(4.dp).height(40.dp).clip(RoundedCornerShape(2.dp)).background(priorityColor))

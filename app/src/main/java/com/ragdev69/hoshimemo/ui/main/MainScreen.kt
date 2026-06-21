@@ -1,5 +1,6 @@
 package com.ragdev69.hoshimemo.ui.main
 
+import com.ragdev69.hoshimemo.BuildConfig
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -88,7 +89,7 @@ fun MainScreen(
 
                     Column {
 
-                        // BannerAd()
+                        BannerAd()
 
                         NavigationBar(
                             containerColor = colors.navBar,
@@ -276,9 +277,14 @@ fun MainScreen(
     ) {
 
         DiaryScreen(
-
             onDismiss = {
                 showDiary = false
+            },
+            onCodeUnlocked = { code ->
+                showDiary = false
+                navController.navigate(
+                    com.ragdev69.hoshimemo.ui.navigation.Screen.Secret.createRoute(code)
+                )
             }
         )
     }
@@ -295,8 +301,10 @@ fun BannerAd() {
 
                 setAdSize(AdSize.BANNER)
 
-                adUnitId =
-                    "ca-app-pub-3940256099942544/6300978111"
+                adUnitId = if (com.ragdev69.hoshimemo.BuildConfig.DEBUG)
+                    "ca-app-pub-3940256099942544/6300978111"   // test
+                else
+                    "ca-app-pub-7539583464292210/5274228153"   // real
 
                 loadAd(
                     AdRequest.Builder().build()
