@@ -17,7 +17,10 @@ import kotlinx.coroutines.launch
 class NotesViewModel(app: Application) : AndroidViewModel(app) {
 
     private val firebaseRepo = FirebaseRepository()
-    private val localRepo    = LocalRepository(HoshiDatabase.getInstance(app).noteDao())
+    private val localRepo    = LocalRepository(
+        HoshiDatabase.getInstance(app).noteDao(),
+        HoshiDatabase.getInstance(app).todoDao()
+    )
     private val prefs        = PrefsManager(app)
 
     val sortBy: StateFlow<String> = prefs.sortByFlow

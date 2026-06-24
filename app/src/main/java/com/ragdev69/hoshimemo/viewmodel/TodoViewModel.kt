@@ -3,14 +3,20 @@ package com.ragdev69.hoshimemo.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ragdev69.hoshimemo.data.local.HoshiDatabase
 import com.ragdev69.hoshimemo.data.model.TodoItem
 import com.ragdev69.hoshimemo.data.repository.FirebaseRepository
+import com.ragdev69.hoshimemo.data.repository.LocalRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class TodoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo  = FirebaseRepository()
+    private val localRepo = LocalRepository(
+        HoshiDatabase.getInstance(app).noteDao(),
+        HoshiDatabase.getInstance(app).todoDao()
+    )
     private val prefs = app.getSharedPreferences("hoshi_todo_prefs", android.content.Context.MODE_PRIVATE)
     private val KEY_EXPIRED = "expired_dismissed_ids"
 
@@ -20,10 +26,13 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit().putStringSet(KEY_EXPIRED, ids).apply()
 
     // ── Todos ─────────────────────────────────────────────────
+    // Not signed in  → local Room database only.
+    // Signed in      → Firestore (source of truth), with local-only items
+    //                  pushed up via syncPendingLocalData() below.
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val todos: StateFlow<List<TodoItem>> = repo.authStateFlow
         .flatMapLatest { uid ->
-            if (uid != null) repo.getTodos() else flowOf(emptyList())
+            if (uid != null) repo.getTodos() else localRepo.getTodos()
         }
         .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -52,24 +61,34 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val groups: StateFlow<List<Map<String, String>>> = repo.authStateFlow
         .flatMapLatest { uid ->
-            if (uid != null) repo.getGroups() else flowOf(emptyList())
+            if (uid != null) repo.getGroups() else localRepo.getGroups()
         }
         .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private fun isSignedIn(): Boolean = repo.currentUser != null
+
     fun createGroup(name: String) = viewModelScope.launch {
-        try { repo.saveGroup("", name) }
+        try {
+            if (isSignedIn()) repo.saveGroup("", name)
+            else localRepo.saveGroup("", name)
+        }
         catch (e: Exception) { _message.emit(e.message ?: "Failed to create group") }
     }
 
     fun deleteGroup(groupId: String) = viewModelScope.launch {
         try {
-            todos.value.filter { it.groupId == groupId }.forEach { repo.deleteTodo(it.id) }
             val taskIds = todos.value.filter { it.groupId == groupId }.map { it.id }.toSet()
+            if (isSignedIn()) {
+                todos.value.filter { it.groupId == groupId }.forEach { repo.deleteTodo(it.id) }
+                repo.deleteGroup(groupId)
+            } else {
+                localRepo.deleteTodosInGroup(groupId)
+                localRepo.deleteGroup(groupId)
+            }
             val updated = _expiredDialogDismissed.value - taskIds
             _expiredDialogDismissed.value = updated
             saveDismissedIds(updated)
-            repo.deleteGroup(groupId)
         }
         catch (e: Exception) { _message.emit(e.message ?: "Error") }
     }
@@ -129,17 +148,16 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
         orderInGroup: Int = 0
     ) = viewModelScope.launch {
         try {
-            repo.saveTodo(
-                TodoItem(
-                    title          = title,
-                    priority       = priority,
-                    timerSeconds   = timerSeconds,
-                    timerStartedAt = 0L,
-                    groupId        = groupId,
-                    groupName      = groupName,
-                    orderInGroup   = orderInGroup
-                )
+            val item = TodoItem(
+                title          = title,
+                priority       = priority,
+                timerSeconds   = timerSeconds,
+                timerStartedAt = 0L,
+                groupId        = groupId,
+                groupName      = groupName,
+                orderInGroup   = orderInGroup
             )
+            if (isSignedIn()) repo.saveTodo(item) else localRepo.saveTodo(item)
         } catch (e: Exception) {
             _message.emit(e.message ?: "Failed to add task")
         }
@@ -152,7 +170,10 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
     fun completeTodo(todoId: String) {
         flashCompleted(todoId)
         viewModelScope.launch {
-            try { repo.toggleTodo(todoId, true) }
+            try {
+                if (isSignedIn()) repo.toggleTodo(todoId, true)
+                else localRepo.toggleTodo(todoId, true)
+            }
             catch (e: Exception) { _message.emit(e.message ?: "Error") }
         }
     }
@@ -160,7 +181,10 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
     fun failTodo(todoId: String) {
         flashFailed(todoId)
         viewModelScope.launch {
-            try { repo.markFailed(todoId) }
+            try {
+                if (isSignedIn()) repo.markFailed(todoId)
+                else localRepo.markFailed(todoId)
+            }
             catch (e: Exception) { _message.emit(e.message ?: "Error") }
         }
     }
@@ -168,7 +192,10 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleTodo(todoId: String, completed: Boolean) {
         if (completed) flashCompleted(todoId)
         viewModelScope.launch {
-            try { repo.toggleTodo(todoId, completed) }
+            try {
+                if (isSignedIn()) repo.toggleTodo(todoId, completed)
+                else localRepo.toggleTodo(todoId, completed)
+            }
             catch (e: Exception) { _message.emit(e.message ?: "Error") }
         }
     }
@@ -176,7 +203,7 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
     // ── Reset todo ────────────────────────────────────────────
     fun resetTodo(todoId: String) = viewModelScope.launch {
         try {
-            repo.resetTodo(todoId)
+            if (isSignedIn()) repo.resetTodo(todoId) else localRepo.resetTodo(todoId)
             val updated = _expiredDialogDismissed.value - todoId
             _expiredDialogDismissed.value = updated
             saveDismissedIds(updated)
@@ -184,12 +211,12 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
         catch (e: Exception) { _message.emit(e.message ?: "Error") }
     }
 
-    // Reset all todos in a group — does NOT auto-start the timer.
-    // User taps START on the group to begin the sequence again.
     fun resetGroup(groupId: String) = viewModelScope.launch {
         try {
             val tasks = todos.value.filter { it.groupId == groupId }
-            tasks.forEach { repo.resetTodo(it.id) }
+            tasks.forEach {
+                if (isSignedIn()) repo.resetTodo(it.id) else localRepo.resetTodo(it.id)
+            }
             val taskIds = tasks.map { it.id }.toSet()
             val updated = _expiredDialogDismissed.value - taskIds
             _expiredDialogDismissed.value = updated
@@ -197,16 +224,40 @@ class TodoViewModel(app: Application) : AndroidViewModel(app) {
         } catch (e: Exception) { _message.emit(e.message ?: "Error") }
     }
 
-    // ── Manual timer start (fire-and-forget) ───────────────────
     fun startTimer(todoId: String) {
         viewModelScope.launch {
-            try { repo.startTimer(todoId) }
+            try {
+                if (isSignedIn()) repo.startTimer(todoId) else localRepo.startTimer(todoId)
+            }
             catch (e: Exception) { _message.emit(e.message ?: "Error") }
         }
     }
 
     fun deleteTodo(todoId: String) = viewModelScope.launch {
-        try { repo.deleteTodo(todoId) }
+        try {
+            if (isSignedIn()) repo.deleteTodo(todoId) else localRepo.deleteTodo(todoId)
+        }
         catch (e: Exception) { _message.emit(e.message ?: "Error") }
+    }
+
+    // ── Sync local → Firebase on sign-in ───────────────────────
+    // Call this once after a successful sign-in (e.g. from your auth flow)
+    // to push any todos/groups created while signed out up to Firestore.
+    fun syncLocalTodosToFirebase() = viewModelScope.launch {
+        if (!isSignedIn()) return@launch
+        try {
+            val unsyncedTodos = localRepo.getUnsyncedTodos()
+            unsyncedTodos.forEach { item ->
+                repo.saveTodo(item)
+                localRepo.markTodoSynced(item.id)
+            }
+            val unsyncedGroups = localRepo.getUnsyncedGroups()
+            unsyncedGroups.forEach { group ->
+                repo.saveGroup(group.groupId, group.groupName)
+                localRepo.markGroupSynced(group.groupId)
+            }
+        } catch (e: Exception) {
+            _message.emit("Sync failed: ${e.message ?: "Unknown error"}")
+        }
     }
 }

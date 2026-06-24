@@ -13,40 +13,41 @@
         android:theme="@style/Theme.HoshiMemo"
         android:name=".HoshiApp">
 
-        <!-- AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-7539583464292210~9937357896"/>
 
-        <!-- ── Default launcher (always present) ─────────────────── -->
+        <!--
+            MainActivity has NO intent-filter here intentionally.
+            The launcher entry is handled by activity-alias entries below.
+            This prevents duplicate icons when aliases are switched.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:resizeableActivity="true"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.HoshiMemo">
+        </activity>
+
+        <!--
+            DEFAULT icon alias — enabled by default, acts as the normal launcher.
+            Switching back to "Default" in the secret screen re-enables this
+            and disables all others.
+        -->
+        <activity-alias
+            android:name=".MainActivityDefaultIcon"
+            android:targetActivity=".MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!--
-        ╔══════════════════════════════════════════════════════════════╗
-        ║               SECRET ALTERNATE ICONS                        ║
-        ║                                                              ║
-        ║  Each alias below points to MainActivity but uses a         ║
-        ║  different launcher icon. All start DISABLED — the          ║
-        ║  SecretScreen enables exactly one at a time via             ║
-        ║  PackageManager.setComponentEnabledSetting().               ║
-        ║                                                              ║
-        ║  TO COMPLETE SETUP IN ANDROID STUDIO:                       ║
-        ║  1. Create ic_launcher_gothic.png  (all mipmap- densities)  ║
-        ║  2. Create ic_launcher_dragon.png  (all mipmap- densities)  ║
-        ║  3. Create ic_launcher_scifi.png   (all mipmap- densities)  ║
-        ║  4. Place them in res/mipmap-*/    (hdpi/xhdpi/xxhdpi/xxxhdpi)
-        ╚══════════════════════════════════════════════════════════════╝
-        -->
+        </activity-alias>
 
         <!-- Icon 1 — Gothic Noir 🕸️ -->
         <activity-alias

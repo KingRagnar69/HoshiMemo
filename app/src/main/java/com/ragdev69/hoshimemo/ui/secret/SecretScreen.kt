@@ -27,9 +27,10 @@ import com.ragdev69.hoshimemo.ui.theme.SecretTheme
 import kotlinx.coroutines.launch
 
 // ── Icon alias component names — must match AndroidManifest.xml exactly ───────
-// Index 0 = DEFAULT (the real MainActivity, always re-enabled when switching back)
+// ALL entries are activity-aliases. MainActivity itself has no launcher filter.
+// Index 0 = default alias (enabled by default), 1-3 = secret aliases (start disabled)
 private val ICON_ALIASES = listOf(
-    "com.ragdev69.hoshimemo.MainActivity",              // 0 = default (original)
+    "com.ragdev69.hoshimemo.MainActivityDefaultIcon",   // 0 = default
     "com.ragdev69.hoshimemo.MainActivityGothicIcon",    // 1 = gothic
     "com.ragdev69.hoshimemo.MainActivityDragonIcon",    // 2 = dragon
     "com.ragdev69.hoshimemo.MainActivitySciFiIcon"      // 3 = sci-fi
@@ -231,13 +232,36 @@ private fun ThemeSelector(
     onSelect: (SecretTheme) -> Unit
 ) {
     val themes = listOf(
-        Triple(SecretTheme.NONE,          "None (use normal theme)", "🚫"),
-        Triple(SecretTheme.GOTHIC,        "Gothic Noir",             "🕸️"),
-        Triple(SecretTheme.DRAGON,        "Dragon's Hoard",          "🐉"),
-        Triple(SecretTheme.SCIFI_FANTASY, "Void Rift",               "🛸")
+        Triple(SecretTheme.GOTHIC,        "Gothic Noir",    "🕸️"),
+        Triple(SecretTheme.DRAGON,        "Dragon's Hoard", "🐉"),
+        Triple(SecretTheme.SCIFI_FANTASY, "Void Rift",      "🛸")
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // "Off" — restores whatever theme is set in Settings
+        val noneSelected = activeTheme == SecretTheme.NONE
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(if (noneSelected) accentColor.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f))
+                .border(1.dp, if (noneSelected) accentColor.copy(alpha = 0.6f) else Color.White.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
+                .clickable { onSelect(SecretTheme.NONE) }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("🎨", fontSize = 20.sp)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "Use my Settings theme",
+                color      = if (noneSelected) accentColor else Color.White.copy(alpha = 0.8f),
+                fontWeight = if (noneSelected) FontWeight.SemiBold else FontWeight.Normal,
+                fontSize   = 14.sp,
+                modifier   = Modifier.weight(1f)
+            )
+            if (noneSelected) Box(Modifier.size(8.dp).background(accentColor, CircleShape))
+        }
+
         themes.forEach { (theme, label, emoji) ->
             val selected = theme == activeTheme
             Row(
@@ -333,18 +357,13 @@ private fun IconSelector(
 private fun switchAppIcon(activity: Activity?, newIndex: Int) {
     activity ?: return
     val pm = activity.packageManager
-
-    // Index 0 = MainActivity (default). Indices 1..3 = activity-aliases.
-    // IMPORTANT: MainActivity must NEVER be disabled — Android needs it to
-    // launch the app. To "hide" the default icon we just enable an alias instead.
-    // The alias takes over the launcher slot; MainActivity stays enabled but
-    // has no launcher intent-filter of its own when an alias is active.
+    // All entries are aliases — enable the selected one, disable the rest.
+    // MainActivity itself has no launcher intent-filter so it's never touched.
     ICON_ALIASES.forEachIndexed { idx, alias ->
-        val newState = when {
-            idx == 0 -> PackageManager.COMPONENT_ENABLED_STATE_ENABLED  // always keep enabled
-            idx == newIndex -> PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            else -> PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-        }
+        val newState = if (idx == newIndex)
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        else
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         runCatching {
             pm.setComponentEnabledSetting(
                 ComponentName(activity, alias),
