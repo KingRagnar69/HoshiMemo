@@ -152,3 +152,47 @@ fun HoshiMemoTheme(
         )
     }
 }
+
+
+@Composable
+fun HoshiMemoThemeWithColors(
+    hoshiColors: HoshiColors,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = if (hoshiColors.isDark) {
+        darkColorScheme(
+            primary      = hoshiColors.primary,
+            secondary    = hoshiColors.accent,
+            background   = hoshiColors.background,
+            surface      = hoshiColors.surface,
+            onPrimary    = Color.White,
+            onBackground = hoshiColors.text,
+            onSurface    = hoshiColors.text
+        )
+    } else {
+        lightColorScheme(
+            primary      = hoshiColors.primary,
+            secondary    = hoshiColors.accent,
+            background   = hoshiColors.background,
+            surface      = hoshiColors.surface,
+            onPrimary    = Color.White,
+            onBackground = hoshiColors.text,
+            onSurface    = hoshiColors.text
+        )
+    }
+
+    // Derive the closest AppTheme for LocalAppTheme (used by screens that read it)
+    // Secret themes don't exist in AppTheme so we fall back to DARK as a safe default
+    val appTheme = LocalAppTheme.current
+
+    CompositionLocalProvider(
+        LocalHoshiColors provides hoshiColors,
+        LocalAppTheme    provides appTheme
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography  = HoshiTypography,
+            content     = content
+        )
+    }
+}

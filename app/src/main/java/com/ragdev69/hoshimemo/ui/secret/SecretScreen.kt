@@ -26,19 +26,20 @@ import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.ui.theme.SecretTheme
 import kotlinx.coroutines.launch
 
-// ── Icon alias component names (must match AndroidManifest.xml) ──
+// ── Icon alias component names — must match AndroidManifest.xml exactly ───────
+// Index 0 = DEFAULT (the real MainActivity, always re-enabled when switching back)
 private val ICON_ALIASES = listOf(
-    "com.ragdev69.hoshimemo.MainActivity",                  // 0 = default
-    "com.ragdev69.hoshimemo.MainActivityGothicIcon",        // 1 = gothic
-    "com.ragdev69.hoshimemo.MainActivityDragonIcon",        // 2 = dragon
-    "com.ragdev69.hoshimemo.MainActivitySciFiIcon"          // 3 = sci-fi
+    "com.ragdev69.hoshimemo.MainActivity",              // 0 = default (original)
+    "com.ragdev69.hoshimemo.MainActivityGothicIcon",    // 1 = gothic
+    "com.ragdev69.hoshimemo.MainActivityDragonIcon",    // 2 = dragon
+    "com.ragdev69.hoshimemo.MainActivitySciFiIcon"      // 3 = sci-fi
 )
 
 private val ICON_LABELS = listOf(
-    Triple("Default",  "🌙", "The original Hoshi icon"),
-    Triple("Gothic",   "🕸️", "Dark & arcane"),
-    Triple("Dragon",   "🐉", "Ember & scale"),
-    Triple("Void Rift","🛸", "Neon plasma")
+    Triple("Default",   "🌙", "The original Hoshi icon"),
+    Triple("Gothic",    "🕸️", "Dark & arcane"),
+    Triple("Dragon",    "🐉", "Ember & scale"),
+    Triple("Void Rift", "🛸", "Neon plasma")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,17 +52,15 @@ fun SecretScreen(
     val colors  = LocalHoshiColors.current
     val scope   = rememberCoroutineScope()
 
-    // ── Persisted state ───────────────────────────────────────
     val activeSecretTheme by SecretThemeManager.getSecretThemeFlow(context)
         .collectAsState(initial = SecretTheme.NONE)
     val activeIconIndex by SecretThemeManager.getActiveIconFlow(context)
         .collectAsState(initial = 0)
 
-    // ── Inner navigation ──────────────────────────────────────
     var currentSection by remember { mutableStateOf(Section.HUB) }
 
     when (currentSection) {
-        Section.STAR_CATCHER -> StarCatcherGame(onDismiss = { currentSection = Section.HUB })
+        Section.STAR_CATCHER  -> StarCatcherGame(onDismiss = { currentSection = Section.HUB })
         Section.FUTURE_LETTER -> FutureLetterScreen(onBack = { currentSection = Section.HUB })
         Section.HUB -> {
             Scaffold(
@@ -72,11 +71,7 @@ fun SecretScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("✦", color = colors.primary, fontSize = 18.sp)
                                 Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "Secret Vault",
-                                    color = colors.text,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text("Secret Vault", color = colors.text, fontWeight = FontWeight.Bold)
                             }
                         },
                         navigationIcon = {
@@ -88,7 +83,6 @@ fun SecretScreen(
                     )
                 }
             ) { padding ->
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -97,11 +91,9 @@ fun SecretScreen(
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-
-                    // ── Header ────────────────────────────────
                     SecretHeader(code = code, accentColor = colors.primary)
 
-                    // ── Section 1: Secret Themes ──────────────
+                    // ── Section 1: Secret Themes ──────────────────────────────
                     SectionCard(
                         title      = "Hidden Themes",
                         subtitle   = "Only switchable from here. Invisible everywhere else.",
@@ -118,7 +110,7 @@ fun SecretScreen(
                         )
                     }
 
-                    // ── Section 2: App Icons ──────────────────
+                    // ── Section 2: App Icons ──────────────────────────────────
                     SectionCard(
                         title      = "Secret Icons",
                         subtitle   = "Changes how the app looks on your home screen.",
@@ -138,7 +130,7 @@ fun SecretScreen(
                         )
                     }
 
-                    // ── Section 3: Star Catcher ───────────────
+                    // ── Section 3: Star Catcher ───────────────────────────────
                     SectionCard(
                         title      = "Star Catcher",
                         subtitle   = "Catch falling stars. They get faster. Don't miss.",
@@ -147,15 +139,10 @@ fun SecretScreen(
                         border     = colors.border,
                         onClick    = { currentSection = Section.STAR_CATCHER }
                     ) {
-                        Text(
-                            "Tap to play →",
-                            color      = colors.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize   = 14.sp
-                        )
+                        Text("Tap to play →", color = colors.primary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
 
-                    // ── Section 4: Future Letters ─────────────
+                    // ── Section 4: Future Letters ─────────────────────────────
                     SectionCard(
                         title      = "Letters to Future Me",
                         subtitle   = "Write something. Lock it. Read it when the time comes.",
@@ -164,12 +151,7 @@ fun SecretScreen(
                         border     = colors.border,
                         onClick    = { currentSection = Section.FUTURE_LETTER }
                     ) {
-                        Text(
-                            "Open letterbox →",
-                            color      = colors.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize   = 14.sp
-                        )
+                        Text("Open letterbox →", color = colors.primary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
 
                     Spacer(Modifier.height(16.dp))
@@ -179,7 +161,7 @@ fun SecretScreen(
     }
 }
 
-// ── Secret Header ─────────────────────────────────────────────
+// ── Secret Header ─────────────────────────────────────────────────────────────
 @Composable
 private fun SecretHeader(code: String, accentColor: Color) {
     Box(
@@ -197,24 +179,14 @@ private fun SecretHeader(code: String, accentColor: Color) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text("✦ ✦ ✦", color = accentColor, fontSize = 14.sp, letterSpacing = 6.sp)
             Spacer(Modifier.height(6.dp))
-            Text(
-                "You found it.",
-                color      = Color.White,
-                fontSize   = 20.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign  = TextAlign.Center
-            )
+            Text("You found it.", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
-            Text(
-                "Code: $code",
-                color    = Color.White.copy(alpha = 0.4f),
-                fontSize = 12.sp
-            )
+            Text("Code: $code", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
         }
     }
 }
 
-// ── Section Card ──────────────────────────────────────────────
+// ── Section Card ──────────────────────────────────────────────────────────────
 @Composable
 private fun SectionCard(
     title: String,
@@ -251,7 +223,7 @@ private fun SectionCard(
     }
 }
 
-// ── Theme Selector ────────────────────────────────────────────
+// ── Theme Selector ────────────────────────────────────────────────────────────
 @Composable
 private fun ThemeSelector(
     activeTheme: SecretTheme,
@@ -259,10 +231,10 @@ private fun ThemeSelector(
     onSelect: (SecretTheme) -> Unit
 ) {
     val themes = listOf(
-        Triple(SecretTheme.NONE,          "None",       "🚫"),
-        Triple(SecretTheme.GOTHIC,        "Gothic Noir","🕸️"),
-        Triple(SecretTheme.DRAGON,        "Dragon",     "🐉"),
-        Triple(SecretTheme.SCIFI_FANTASY, "Void Rift",  "🛸")
+        Triple(SecretTheme.NONE,          "None (use normal theme)", "🚫"),
+        Triple(SecretTheme.GOTHIC,        "Gothic Noir",             "🕸️"),
+        Triple(SecretTheme.DRAGON,        "Dragon's Hoard",          "🐉"),
+        Triple(SecretTheme.SCIFI_FANTASY, "Void Rift",               "🛸")
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -289,24 +261,20 @@ private fun ThemeSelector(
                 Spacer(Modifier.width(10.dp))
                 Text(
                     label,
-                    color = if (selected) accentColor else Color.White.copy(alpha = 0.8f),
+                    color      = if (selected) accentColor else Color.White.copy(alpha = 0.8f),
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    fontSize = 14.sp,
-                    modifier = Modifier.weight(1f)
+                    fontSize   = 14.sp,
+                    modifier   = Modifier.weight(1f)
                 )
                 if (selected) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(accentColor, CircleShape)
-                    )
+                    Box(Modifier.size(8.dp).background(accentColor, CircleShape))
                 }
             }
         }
     }
 }
 
-// ── Icon Selector ─────────────────────────────────────────────
+// ── Icon Selector ─────────────────────────────────────────────────────────────
 @Composable
 private fun IconSelector(
     activeIndex: Int,
@@ -338,9 +306,9 @@ private fun IconSelector(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         label,
-                        color = if (selected) accentColor else Color.White.copy(alpha = 0.85f),
+                        color      = if (selected) accentColor else Color.White.copy(alpha = 0.85f),
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        fontSize = 14.sp
+                        fontSize   = 14.sp
                     )
                     Text(desc, color = Color.White.copy(alpha = 0.4f), fontSize = 11.sp)
                 }
@@ -351,31 +319,40 @@ private fun IconSelector(
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            "⚠ You'll need to drop the icon images into mipmap in Android Studio. See AndroidManifest for alias names.",
-            color = Color.White.copy(alpha = 0.35f),
+            "⚠ Drop icon images into mipmap in Android Studio. See AndroidManifest for alias names.",
+            color    = Color.White.copy(alpha = 0.35f),
             fontSize = 11.sp
         )
     }
 }
 
-// ── Icon switching helper ─────────────────────────────────────
+// ── Icon switching ────────────────────────────────────────────────────────────
+// Index 0 = default (real MainActivity). For default we ENABLE MainActivity and
+// DISABLE all aliases. For any other index we ENABLE that alias and DISABLE
+// everything else INCLUDING MainActivity itself.
 private fun switchAppIcon(activity: Activity?, newIndex: Int) {
     activity ?: return
     val pm = activity.packageManager
+
+    // Index 0 = MainActivity (default). Indices 1..3 = activity-aliases.
+    // IMPORTANT: MainActivity must NEVER be disabled — Android needs it to
+    // launch the app. To "hide" the default icon we just enable an alias instead.
+    // The alias takes over the launcher slot; MainActivity stays enabled but
+    // has no launcher intent-filter of its own when an alias is active.
     ICON_ALIASES.forEachIndexed { idx, alias ->
-        val state = if (idx == newIndex)
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        else
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        val newState = when {
+            idx == 0 -> PackageManager.COMPONENT_ENABLED_STATE_ENABLED  // always keep enabled
+            idx == newIndex -> PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            else -> PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        }
         runCatching {
             pm.setComponentEnabledSetting(
                 ComponentName(activity, alias),
-                state,
+                newState,
                 PackageManager.DONT_KILL_APP
             )
         }
     }
 }
 
-// ── Navigation enum ───────────────────────────────────────────
 private enum class Section { HUB, STAR_CATCHER, FUTURE_LETTER }

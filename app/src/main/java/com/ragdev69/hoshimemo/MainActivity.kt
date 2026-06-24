@@ -30,9 +30,13 @@ import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.ragdev69.hoshimemo.ui.navigation.HoshiNavGraph
+import com.ragdev69.hoshimemo.ui.secret.SecretThemeManager
 import com.ragdev69.hoshimemo.ui.theme.AppTheme
-import com.ragdev69.hoshimemo.ui.theme.HoshiMemoTheme
+import com.ragdev69.hoshimemo.ui.theme.HoshiColors
+import com.ragdev69.hoshimemo.ui.theme.HoshiMemoThemeWithColors
+import com.ragdev69.hoshimemo.ui.theme.SecretTheme
 import com.ragdev69.hoshimemo.ui.theme.getHoshiColors
+import com.ragdev69.hoshimemo.ui.theme.getSecretHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 
@@ -41,15 +45,13 @@ class MainActivity : ComponentActivity() {
     private var interstitialAd: InterstitialAd? = null
     private var isAdShowing    = false
 
-    // Tracks elapsed seconds since app opened (resets on quit)
     private var secondsElapsed = 0
     private val handler        = android.os.Handler(android.os.Looper.getMainLooper())
     private var timerRunnable: Runnable? = null
 
-    // Schedule: first ad at 60s, then every 1200s (20 min) after that
-    private val firstAdAt      = 60      // seconds
-    private val repeatEvery    = 1200    // seconds (20 min)
-    private var nextAdAt       = firstAdAt
+    private val firstAdAt   = 60
+    private val repeatEvery = 1200
+    private var nextAdAt    = firstAdAt
 
     override fun attachBaseContext(newBase: Context) {
         val savedLang = newBase
@@ -62,19 +64,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // ── AdMob init ────────────────────────────────────────────────────────
-        // Register THIS device as a test device so real-install testing is safe.
-        // Replace "YOUR_DEVICE_TEST_ID" with the ID from logcat (see comment below).
-        // To find your ID: run the app once, search logcat for "Use RequestConfiguration"
-        // it will say something like: Use RequestConfiguration.Builder().setTestDeviceIds(...)
-        // Copy that hex string and paste it below.
         MobileAds.setRequestConfiguration(
             RequestConfiguration.Builder()
                 .setTestDeviceIds(
                     if (BuildConfig.DEBUG)
                         listOf(AdRequest.DEVICE_ID_EMULATOR, "YOUR_DEVICE_TEST_ID")
                     else
-                        listOf("YOUR_DEVICE_TEST_ID")   // keep your device safe in prod too
+                        listOf("YOUR_DEVICE_TEST_ID")
                 )
                 .build()
         )
@@ -89,6 +85,16 @@ class MainActivity : ComponentActivity() {
             val currentTheme    by settingsViewModel.currentTheme.collectAsStateWithLifecycle()
             val currentLanguage by settingsViewModel.currentLanguage.collectAsStateWithLifecycle()
 
+            // ── Secret theme — read from DataStore, overlays the normal theme ──
+            val secretTheme by SecretThemeManager
+                .getSecretThemeFlow(this@MainActivity)
+                .collectAsState(initial = SecretTheme.NONE)
+
+            // Secret theme wins if active, otherwise use the normal theme colors
+            val hoshiColors = remember(currentTheme, secretTheme) {
+                getSecretHoshiColors(secretTheme) ?: getHoshiColors(currentTheme)
+            }
+
             var lastAppliedLang by remember { mutableStateOf("") }
             LaunchedEffect(currentLanguage) {
                 if (lastAppliedLang.isNotEmpty() && currentLanguage != lastAppliedLang) {
@@ -98,10 +104,8 @@ class MainActivity : ComponentActivity() {
                 lastAppliedLang = currentLanguage
             }
 
-            HoshiMemoTheme(appTheme = currentTheme) {
-                val hoshiColors = getHoshiColors(currentTheme)
-                val systemUi    = rememberSystemUiController()
-
+            HoshiMemoThemeWithColors(hoshiColors = hoshiColors) {
+                val systemUi = rememberSystemUiController()
                 SideEffect {
                     systemUi.setStatusBarColor(
                         color     = hoshiColors.background,
@@ -127,7 +131,7 @@ class MainActivity : ComponentActivity() {
                     label = "splash_to_main"
                 ) { splash ->
                     if (splash) {
-                        SplashContent(theme = currentTheme)
+                        SplashContent(colors = hoshiColors)
                     } else {
                         val navController = rememberNavController()
                         HoshiNavGraph(navController = navController)
@@ -139,22 +143,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Stop timer — resets when app is quit
         timerRunnable?.let { handler.removeCallbacks(it) }
-        timerRunnable = null
+        timerRunnable  = null
         secondsElapsed = 0
-        nextAdAt = firstAdAt
+        nextAdAt       = firstAdAt
     }
 
-    // ── Timer: ticks every second, shows ad at the right moments ─────────────
     private fun startAdTimer() {
         timerRunnable = object : Runnable {
             override fun run() {
                 secondsElapsed++
                 if (secondsElapsed >= nextAdAt) {
                     showAdSafely()
-                    nextAdAt = secondsElapsed + repeatEvery   // schedule next
-                    loadInterstitialAd()                       // preload next one
+                    nextAdAt = secondsElapsed + repeatEvery
+                    loadInterstitialAd()
                 }
                 handler.postDelayed(this, 1000L)
             }
@@ -162,12 +164,11 @@ class MainActivity : ComponentActivity() {
         handler.postDelayed(timerRunnable!!, 1000L)
     }
 
-    // ── Interstitial load ─────────────────────────────────────────────────────
     private fun loadInterstitialAd() {
         val adUnitId = if (BuildConfig.DEBUG)
-            "ca-app-pub-3940256099942544/1033173712"   // test interstitial
+            "ca-app-pub-3940256099942544/1033173712"
         else
-            "ca-app-pub-7539583464292210/9125843250"   // real interstitial
+            "ca-app-pub-7539583464292210/9125843250"
 
         InterstitialAd.load(
             this,
@@ -176,7 +177,7 @@ class MainActivity : ComponentActivity() {
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAd = ad
-                    isAdShowing    = false   // ready to show again
+                    isAdShowing    = false
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     interstitialAd = null
@@ -195,10 +196,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// ── Splash — now accepts HoshiColors directly so secret themes apply here too ─
 @Composable
-fun SplashContent(theme: AppTheme) {
-    val colors = getHoshiColors(theme)
-
+fun SplashContent(colors: HoshiColors) {
     val infiniteTransition = rememberInfiniteTransition(label = "splash_pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue  = 0.9f,

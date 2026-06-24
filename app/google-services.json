@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "33264674876-oit7g7jeeaufdgsrp3cq8gikoc8iv6lu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ragdev69.hoshimemo",
+            "certificate_hash": "7d8f16d607c32268a8a79fdffac6bba284c03814"
+          }
+        },
+        {
           "client_id": "33264674876-ktksfd3rvikpab4prkvkjkf4gu9srq2b.apps.googleusercontent.com",
           "client_type": 3
         }

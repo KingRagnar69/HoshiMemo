@@ -1,6 +1,5 @@
 package com.ragdev69.hoshimemo.ui.secret
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -17,24 +16,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.sin
 import kotlin.random.Random
 
-data class FallingStar(
+// ── Data ──────────────────────────────────────────────────────────────────────
+private data class Star(
     val id: Int,
-    val x: Float,          // 0f..1f normalized
-    var y: Float,          // 0f..1f normalized, increases downward
-    val size: Float,       // radius in dp
-    val speed: Float,      // normalized units per tick
+    val x: Float,          // px
+    var y: Float,          // px
+    val radius: Float,     // px
+    val speedPx: Float,    // px per frame
     val color: Color,
-    val twinkle: Float = Random.nextFloat() // phase offset for twinkle
+    val twinkleOffset: Float
 )
 
 private val STAR_COLORS = listOf(
@@ -42,190 +42,214 @@ private val STAR_COLORS = listOf(
     Color(0xFFFFAACC), Color(0xFFCCAAFF), Color(0xFFAAFFCC)
 )
 
+private enum class GameState { IDLE, PLAYING, DEAD }
+
 @Composable
-fun StarCatcherGame(
-    onDismiss: () -> Unit
-) {
-    val context    = LocalContext.current
-    val colors     = LocalHoshiColors.current
-    val scope      = rememberCoroutineScope()
+fun StarCatcherGame(onDismiss: () -> Unit) {
+    val context     = LocalContext.current
+    val colors      = LocalHoshiColors.current
+    val scope       = rememberCoroutineScope()
 
-    // ── Game state ────────────────────────────────────────────
-    var gameState  by remember { mutableStateOf(GameState.IDLE) }   // IDLE, PLAYING, DEAD
-    var score      by remember { mutableIntStateOf(0) }
-    var highScore  by remember { mutableIntStateOf(0) }
-    var lives      by remember { mutableIntStateOf(3) }
-    var stars      by remember { mutableStateOf<List<FallingStar>>(emptyList()) }
-    var catcherX   by remember { mutableFloatStateOf(0.5f) }        // normalized 0..1
-    var tickMs     by remember { mutableLongStateOf(50L) }
-    var starIdCounter by remember { mutableIntStateOf(0) }
+    // ── Mutable game state — stored in plain refs to avoid recomposition ──────
+    var gameState   by remember { mutableStateOf(GameState.IDLE) }
+    var score       by remember { mutableIntStateOf(0) }
+    var highScore   by remember { mutableIntStateOf(0) }
+    var lives       by remember { mutableIntStateOf(3) }
 
-    // Load high score
+    // These are mutated inside the game loop without triggering recomposition
+    val stars       = remember { mutableStateListOf<Star>() }
+    val catcherXRef = remember { mutableFloatStateOf(0f) }   // px, set on first frame
+    var canvasW     by remember { mutableFloatStateOf(0f) }
+    var canvasH     by remember { mutableFloatStateOf(0f) }
+    var frameTime   by remember { mutableLongStateOf(0L) }    // drives Canvas redraw cheaply
+    var idCounter   by remember { mutableIntStateOf(0) }
+    var frameCount  by remember { mutableIntStateOf(0) }
+
+    // Load high score once
     LaunchedEffect(Unit) {
         SecretThemeManager.getStarHighScoreFlow(context).collect { highScore = it }
     }
 
-    // ── Twinkle animation ─────────────────────────────────────
-    val infiniteTransition = rememberInfiniteTransition(label = "twinkle")
-    val twinklePhase by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing)),
-        label = "phase"
-    )
-
-    // ── Game loop ─────────────────────────────────────────────
+    // ── Core game loop — one coroutine, awaitFrame for 60fps sync ─────────────
     LaunchedEffect(gameState) {
         if (gameState != GameState.PLAYING) return@LaunchedEffect
 
-        var tick = 0
-        while (gameState == GameState.PLAYING) {
-            delay(tickMs)
-            tick++
+        score      = 0
+        lives      = 3
+        frameCount = 0
+        stars.clear()
 
-            // Spawn a new star every ~20 ticks (scales down with difficulty)
-            val spawnInterval = maxOf(8, 20 - score / 5)
-            val newStars = if (tick % spawnInterval == 0) {
-                val baseSpeed = 0.004f + score * 0.0003f   // gets faster as score rises
-                listOf(
-                    FallingStar(
-                        id    = starIdCounter++,
-                        x     = Random.nextFloat() * 0.85f + 0.075f,
-                        y     = 0f,
-                        size  = Random.nextFloat() * 10f + 10f,
-                        speed = baseSpeed + Random.nextFloat() * 0.002f,
-                        color = STAR_COLORS.random()
+        while (gameState == GameState.PLAYING) {
+            awaitFrame()                     // suspends until next vsync (~16ms)
+            frameCount++
+
+            if (canvasW == 0f || canvasH == 0f) continue
+
+            // Init catcher in centre on first frame
+            if (catcherXRef.floatValue == 0f) catcherXRef.floatValue = canvasW / 2f
+
+            // ── Speed scaling: faster every 10 points ─────────────────────────
+            val speedMult = 1f + (score / 10) * 0.3f          // +30% per 10pts
+            val basePx    = canvasH * 0.006f * speedMult      // ~0.6% screen height/frame
+
+            // ── Spawn: interval shrinks with score ────────────────────────────
+            val spawnEvery = maxOf(18, 45 - score * 2)
+            if (frameCount % spawnEvery == 0) {
+                val r = canvasH * 0.022f + Random.nextFloat() * canvasH * 0.012f
+                stars.add(
+                    Star(
+                        id           = idCounter++,
+                        x            = r + Random.nextFloat() * (canvasW - r * 2f),
+                        y            = -r,
+                        radius       = r,
+                        speedPx      = basePx + Random.nextFloat() * canvasH * 0.002f,
+                        color        = STAR_COLORS.random(),
+                        twinkleOffset = Random.nextFloat()
                     )
                 )
-            } else emptyList()
-
-            // Move stars down
-            val movedStars = (stars + newStars).map { it.copy(y = it.y + it.speed) }
-
-            // Catch detection: star within catcher range at bottom
-            val catcherWidth = 0.15f
-            val catcherY     = 0.88f
-            val caught       = movedStars.filter { s ->
-                s.y >= catcherY && abs(s.x - catcherX) < catcherWidth / 2f + s.size / 800f
             }
-            val missed = movedStars.filter { s -> s.y > 1.0f && s !in caught }
 
-            if (caught.isNotEmpty()) score += caught.size
+            // ── Move stars ────────────────────────────────────────────────────
+            val catcherY      = canvasH * 0.88f
+            val catcherHalfW  = canvasW * 0.09f
+            val toRemove      = mutableListOf<Star>()
+            var missedThisFrame = 0
 
-            val newLives = lives - missed.size
-            if (newLives <= 0) {
-                lives = 0
-                gameState = GameState.DEAD
-                scope.launch { SecretThemeManager.saveHighScore(context, score) }
-                return@LaunchedEffect
+            for (s in stars) {
+                s.y += s.speedPx
+                when {
+                    // Caught
+                    s.y >= catcherY - s.radius &&
+                            s.y <= catcherY + s.radius &&
+                            abs(s.x - catcherXRef.floatValue) <= catcherHalfW + s.radius -> {
+                        toRemove.add(s)
+                        score++
+                    }
+                    // Missed — fell off screen
+                    s.y > canvasH + s.radius -> {
+                        toRemove.add(s)
+                        missedThisFrame++
+                    }
+                }
             }
-            if (missed.isNotEmpty()) lives = newLives
+            stars.removeAll(toRemove.toSet())
 
-            stars = movedStars.filterNot { it in caught || it in missed }
+            if (missedThisFrame > 0) {
+                val newLives = lives - missedThisFrame
+                if (newLives <= 0) {
+                    lives = 0
+                    gameState = GameState.DEAD
+                    scope.launch { SecretThemeManager.saveHighScore(context, score) }
+                    return@LaunchedEffect
+                }
+                lives = newLives
+            }
+
+            // Trigger one Canvas redraw by bumping frameTime
+            frameTime = System.nanoTime()
         }
     }
 
-    // ── UI ────────────────────────────────────────────────────
+    // ── UI ────────────────────────────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF050810))
     ) {
         when (gameState) {
-            GameState.IDLE -> IdleScreen(
-                highScore = highScore,
+            GameState.IDLE -> GameIdleScreen(
+                highScore   = highScore,
                 accentColor = colors.primary,
-                onStart = {
-                    score = 0; lives = 3; stars = emptyList(); tickMs = 50L
-                    gameState = GameState.PLAYING
-                },
-                onBack = onDismiss
+                onStart     = { gameState = GameState.PLAYING },
+                onBack      = onDismiss
             )
 
             GameState.PLAYING -> {
-                // Canvas game area
+                // Single Canvas — redraws each frame via frameTime read
+                @Suppress("UNUSED_VARIABLE")
+                val frameSnapshot = frameTime   // read so Compose tracks it as a dependency
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(Unit) {
                             detectTapGestures { offset ->
-                                catcherX = (offset.x / size.width).coerceIn(0.08f, 0.92f)
+                                catcherXRef.floatValue = offset.x.coerceIn(
+                                    size.width * 0.08f,
+                                    size.width * 0.92f
+                                )
                             }
                         }
                 ) {
-                    // Draw starfield background
-                    drawStarfield(twinklePhase)
+                    canvasW = size.width
+                    canvasH = size.height
 
-                    // Draw falling stars
-                    stars.forEach { star ->
-                        val alpha = 0.7f + 0.3f * kotlin.math.sin(
-                            (twinklePhase + star.twinkle) * 2 * Math.PI.toFloat()
-                        )
-                        drawCircle(
-                            color  = star.color.copy(alpha = alpha),
-                            radius = star.size,
-                            center = Offset(star.x * size.width, star.y * size.height)
-                        )
-                        // Glow
-                        drawCircle(
-                            color  = star.color.copy(alpha = alpha * 0.3f),
-                            radius = star.size * 2.2f,
-                            center = Offset(star.x * size.width, star.y * size.height)
-                        )
+                    val phase = (frameCount % 120) / 120f   // 0..1 twinkle cycle
+
+                    // Background stars (static seed, cheap)
+                    drawBgStars(phase)
+
+                    // Falling stars
+                    for (s in stars) {
+                        val alpha = 0.65f + 0.35f * sin((phase + s.twinkleOffset) * 2f * Math.PI.toFloat()).coerceIn(-1f, 1f)
+                        drawCircle(s.color.copy(alpha = alpha.coerceIn(0f,1f)),  radius = s.radius,        center = Offset(s.x, s.y))
+                        drawCircle(s.color.copy(alpha = (alpha * 0.25f).coerceIn(0f,1f)), radius = s.radius * 2.4f, center = Offset(s.x, s.y))
                     }
 
-                    // Draw catcher
-                    val cx     = catcherX * size.width
-                    val cy     = 0.88f * size.height
-                    val cw     = size.width * 0.15f
-                    drawLine(
-                        color       = Color(0xFF00E5FF),
-                        start       = Offset(cx - cw / 2f, cy),
-                        end         = Offset(cx + cw / 2f, cy),
-                        strokeWidth = 6f
-                    )
-                    drawLine(
-                        color       = Color(0xFF00E5FF).copy(alpha = 0.3f),
-                        start       = Offset(cx - cw / 2f, cy),
-                        end         = Offset(cx + cw / 2f, cy),
-                        strokeWidth = 18f
-                    )
+                    // Catcher bar
+                    val cx = catcherXRef.floatValue
+                    val cy = size.height * 0.88f
+                    val hw = size.width * 0.09f
+                    drawLine(Color(0xFF00E5FF),                  Offset(cx - hw, cy), Offset(cx + hw, cy), strokeWidth = 7f)
+                    drawLine(Color(0xFF00E5FF).copy(alpha = 0.25f), Offset(cx - hw, cy), Offset(cx + hw, cy), strokeWidth = 22f)
                 }
 
-                // HUD
+                // HUD — only recomposes when score/lives change
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 48.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("⭐ $score", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("⭐ $score",  color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Text("❤️".repeat(lives.coerceAtLeast(0)), fontSize = 18.sp)
                 }
-
                 Text(
-                    text = "Tap to move catcher",
-                    color = Color.White.copy(alpha = 0.4f),
+                    "Tap to move catcher",
+                    color    = Color.White.copy(alpha = 0.35f),
                     fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)
                 )
             }
 
             GameState.DEAD -> GameOverScreen(
-                score     = score,
-                highScore = highScore,
+                score       = score,
+                highScore   = highScore,
                 accentColor = colors.primary,
-                onRestart = {
-                    score = 0; lives = 3; stars = emptyList()
-                    gameState = GameState.PLAYING
-                },
-                onBack = onDismiss
+                onRestart   = { stars.clear(); gameState = GameState.PLAYING },
+                onBack      = onDismiss
             )
         }
     }
 }
 
+// ── Background starfield ──────────────────────────────────────────────────────
+private fun DrawScope.drawBgStars(phase: Float) {
+    val rng = Random(42)
+    repeat(90) {
+        val x = rng.nextFloat() * size.width
+        val y = rng.nextFloat() * size.height
+        val r = rng.nextFloat() * 2.8f + 0.5f
+        val a = 0.15f + 0.12f * sin((phase + rng.nextFloat()) * 2f * Math.PI.toFloat())
+        drawCircle(Color.White.copy(alpha = a.coerceIn(0f, 1f)), radius = r, center = Offset(x, y))
+    }
+}
+
+// ── Idle screen ───────────────────────────────────────────────────────────────
 @Composable
-private fun IdleScreen(highScore: Int, accentColor: Color, onStart: () -> Unit, onBack: () -> Unit) {
+private fun GameIdleScreen(
+    highScore: Int, accentColor: Color,
+    onStart: () -> Unit, onBack: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -236,9 +260,9 @@ private fun IdleScreen(highScore: Int, accentColor: Color, onStart: () -> Unit, 
         Text("Star Catcher", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Catch falling stars before they vanish.\nStars fall faster as your score grows.",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 14.sp,
+            "Catch falling stars before they vanish.\nThey fall faster as your score grows.",
+            color     = Color.White.copy(alpha = 0.6f),
+            fontSize  = 14.sp,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         if (highScore > 0) {
@@ -248,18 +272,19 @@ private fun IdleScreen(highScore: Int, accentColor: Color, onStart: () -> Unit, 
         Spacer(Modifier.height(32.dp))
         Button(
             onClick = onStart,
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-            shape = RoundedCornerShape(12.dp)
+            colors  = ButtonDefaults.buttonColors(containerColor = accentColor),
+            shape   = RoundedCornerShape(12.dp)
         ) { Text("Play", color = Color.White, fontSize = 16.sp) }
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = onBack,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
-            shape = RoundedCornerShape(12.dp)
+            colors  = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+            shape   = RoundedCornerShape(12.dp)
         ) { Text("Back", color = Color.White.copy(alpha = 0.7f)) }
     }
 }
 
+// ── Game over screen ──────────────────────────────────────────────────────────
 @Composable
 private fun GameOverScreen(
     score: Int, highScore: Int, accentColor: Color,
@@ -275,7 +300,7 @@ private fun GameOverScreen(
         Text("Stars gone", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
         Text("Score: $score ⭐", color = Color.White, fontSize = 20.sp)
-        if (score >= highScore && score > 0) {
+        if (score > 0 && score >= highScore) {
             Text("New best! 🎉", color = accentColor, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         } else if (highScore > 0) {
             Text("Best: $highScore ⭐", color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp)
@@ -283,28 +308,14 @@ private fun GameOverScreen(
         Spacer(Modifier.height(32.dp))
         Button(
             onClick = onRestart,
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-            shape = RoundedCornerShape(12.dp)
+            colors  = ButtonDefaults.buttonColors(containerColor = accentColor),
+            shape   = RoundedCornerShape(12.dp)
         ) { Text("Try again", color = Color.White) }
         Spacer(Modifier.height(10.dp))
         Button(
             onClick = onBack,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
-            shape = RoundedCornerShape(12.dp)
+            colors  = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+            shape   = RoundedCornerShape(12.dp)
         ) { Text("Back", color = Color.White.copy(alpha = 0.7f)) }
     }
 }
-
-private fun DrawScope.drawStarfield(phase: Float) {
-    // Static background stars
-    val rng = Random(42)
-    repeat(80) {
-        val x = rng.nextFloat() * size.width
-        val y = rng.nextFloat() * size.height
-        val r = rng.nextFloat() * 2.5f + 0.5f
-        val a = 0.2f + 0.15f * kotlin.math.sin((phase + rng.nextFloat()) * 2 * Math.PI.toFloat())
-        drawCircle(Color.White.copy(alpha = a), radius = r, center = Offset(x, y))
-    }
-}
-
-private enum class GameState { IDLE, PLAYING, DEAD }

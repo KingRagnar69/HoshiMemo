@@ -622,7 +622,20 @@ private fun DiaryEditor(
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         NotebookRules(colors = colors)
 
-                        Box(modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 14.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 18.dp, vertical = 14.dp)
+                                // Intercept all taps when read-only so they don't
+                                // fall through to notes/cards behind this screen.
+                                .then(
+                                    if (readOnly) Modifier.clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = {}
+                                    ) else Modifier
+                                )
+                        ) {
                             if (fieldValue.text.isEmpty() && !readOnly) {
                                 Text(
                                     text  = "Write your thoughts for today…",
