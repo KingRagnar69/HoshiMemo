@@ -34,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ragdev69.hoshimemo.R
 import com.ragdev69.hoshimemo.data.model.TodoItem
+import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundManager
 import com.ragdev69.hoshimemo.ui.theme.HoshiColors
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.TodoViewModel
@@ -49,6 +51,7 @@ import kotlin.math.roundToInt
 @Composable
 fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
     val colors           = LocalHoshiColors.current
+    val soundConfig      = LocalSoundConfig.current
     val todos            by viewModel.todos.collectAsStateWithLifecycle()
     val ungroupedPending by viewModel.ungroupedPending.collectAsStateWithLifecycle()
     val ungroupedDone    by viewModel.ungroupedCompleted.collectAsStateWithLifecycle()
@@ -411,6 +414,7 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                                 groupName  = gName,
                                 expanded   = expanded,
                                 colors     = colors,
+                                soundConfig = soundConfig,
                                 onToggleExpand   = { expandedGroupId = if (expanded) null else gId },
                                 onDeleteGroup    = { viewModel.deleteGroup(gId) },
                                 onResetGroup     = { viewModel.resetGroup(gId) },
@@ -433,11 +437,17 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                             AnimatedVisibility(visible = true, enter = fadeIn() + slideInHorizontally()) {
                                 SwipeableTodoCard(
                                     todo = todo, colors = colors,
-                                    onComplete = { viewModel.completeTodo(todo.id) },
+                                    onComplete = {
+                                        SoundManager.playTodoComplete(soundConfig.secretTheme, soundConfig.muted)
+                                        viewModel.completeTodo(todo.id)
+                                    },
                                     onFail = { viewModel.failTodo(todo.id) },
                                     onDelete = { viewModel.deleteTodo(todo.id) },
                                     onReset = { viewModel.resetTodo(todo.id) },
-                                    onStartTimer = { viewModel.startTimer(todo.id) },
+                                    onStartTimer = {
+                                        SoundManager.playTodoStart(soundConfig.secretTheme, soundConfig.muted)
+                                        viewModel.startTimer(todo.id)
+                                    },
                                     onMarkComplete = { viewModel.toggleTodo(todo.id, true) },
                                     justCompleted = justCompleted, justFailed = justFailed,
                                     expiredDismissed = expiredDismissed,
@@ -531,6 +541,7 @@ private fun GroupCard(
     groupName: String,
     expanded: Boolean,
     colors: HoshiColors,
+    soundConfig: com.ragdev69.hoshimemo.ui.sound.SoundConfig,
     onToggleExpand: () -> Unit,
     onDeleteGroup: () -> Unit,
     onResetGroup: () -> Unit,
@@ -626,6 +637,8 @@ private fun GroupCard(
         // Fire the "started" write in the background so other devices /
         // future sessions see it — but don't wait for it.
         onStartTimer(id)
+        // Play start sound for every task
+        SoundManager.playTodoStart(soundConfig.secretTheme, soundConfig.muted)
 
         var remaining = task.timerSeconds
         localRemaining = remaining
@@ -641,6 +654,10 @@ private fun GroupCard(
         onComplete(id)
 
         val next = pendingSorted.firstOrNull { it.id != id }
+        // Play complete sound only when the last task in the group finishes
+        if (next == null) {
+            SoundManager.playTodoComplete(soundConfig.secretTheme, soundConfig.muted)
+        }
         activeId = next?.id
         if (next == null) started = false   // sequence finished
     }

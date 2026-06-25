@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ragdev69.hoshimemo.data.model.Note
+import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundManager
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.NotesViewModel
 
@@ -28,11 +30,16 @@ fun NoteEditorScreen(
     onBack: () -> Unit,
     viewModel: NotesViewModel = viewModel()
 ) {
-    val colors = LocalHoshiColors.current
+    val colors      = LocalHoshiColors.current
+    val soundConfig = LocalSoundConfig.current
 
     var title   by remember { mutableStateOf(noteTitle) }
     var content by remember { mutableStateOf(noteContent) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Debounce timestamps for write and delete sounds
+    var lastWriteSoundMs by remember { mutableLongStateOf(0L) }
+    var lastDelSoundMs   by remember { mutableLongStateOf(0L) }
 
     val wordCount = remember(content) {
         content.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
@@ -144,7 +151,24 @@ fun NoteEditorScreen(
             // ── Title Input ──────────────────────────────────
             TextField(
                 value         = title,
-                onValueChange = { title = it },
+                onValueChange = { new ->
+                    val now = System.currentTimeMillis()
+                    when {
+                        new.length > title.length -> {
+                            if (now - lastWriteSoundMs > 400L) {
+                                lastWriteSoundMs = now
+                                SoundManager.playWrite(soundConfig.secretTheme, soundConfig.muted)
+                            }
+                        }
+                        new.length < title.length -> {
+                            if (now - lastDelSoundMs > 400L) {
+                                lastDelSoundMs = now
+                                SoundManager.playDel(soundConfig.secretTheme, soundConfig.muted)
+                            }
+                        }
+                    }
+                    title = new
+                },
                 modifier      = Modifier
                     .fillMaxWidth()
                     .alpha(titleAlpha),
@@ -174,7 +198,24 @@ fun NoteEditorScreen(
             // ── Content Input ────────────────────────────────
             TextField(
                 value         = content,
-                onValueChange = { content = it },
+                onValueChange = { new ->
+                    val now = System.currentTimeMillis()
+                    when {
+                        new.length > content.length -> {
+                            if (now - lastWriteSoundMs > 400L) {
+                                lastWriteSoundMs = now
+                                SoundManager.playWrite(soundConfig.secretTheme, soundConfig.muted)
+                            }
+                        }
+                        new.length < content.length -> {
+                            if (now - lastDelSoundMs > 400L) {
+                                lastDelSoundMs = now
+                                SoundManager.playDel(soundConfig.secretTheme, soundConfig.muted)
+                            }
+                        }
+                    }
+                    content = new
+                },
                 modifier      = Modifier
                     .fillMaxWidth()
                     .weight(1f)

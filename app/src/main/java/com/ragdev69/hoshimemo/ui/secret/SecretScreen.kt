@@ -238,29 +238,13 @@ private fun ThemeSelector(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // "Off" — restores whatever theme is set in Settings
-        val noneSelected = activeTheme == SecretTheme.NONE
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(if (noneSelected) accentColor.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f))
-                .border(1.dp, if (noneSelected) accentColor.copy(alpha = 0.6f) else Color.White.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
-                .clickable { onSelect(SecretTheme.NONE) }
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("🎨", fontSize = 20.sp)
-            Spacer(Modifier.width(10.dp))
-            Text(
-                "Use my Settings theme",
-                color      = if (noneSelected) accentColor else Color.White.copy(alpha = 0.8f),
-                fontWeight = if (noneSelected) FontWeight.SemiBold else FontWeight.Normal,
-                fontSize   = 14.sp,
-                modifier   = Modifier.weight(1f)
-            )
-            if (noneSelected) Box(Modifier.size(8.dp).background(accentColor, CircleShape))
-        }
+        // Hint — tapping any theme applies it; go to Settings to use normal themes
+        Text(
+            "Tap to apply. To return to your normal theme, go to Settings.",
+            color    = Color.White.copy(alpha = 0.35f),
+            fontSize = 11.sp
+        )
+        Spacer(Modifier.height(2.dp))
 
         themes.forEach { (theme, label, emoji) ->
             val selected = theme == activeTheme

@@ -31,6 +31,10 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.ragdev69.hoshimemo.ui.navigation.HoshiNavGraph
 import com.ragdev69.hoshimemo.ui.secret.SecretThemeManager
+import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundManager
+import com.ragdev69.hoshimemo.ui.sound.SoundPrefs
 import com.ragdev69.hoshimemo.ui.theme.AppTheme
 import com.ragdev69.hoshimemo.ui.theme.HoshiColors
 import com.ragdev69.hoshimemo.ui.theme.HoshiMemoThemeWithColors
@@ -80,6 +84,8 @@ class MainActivity : ComponentActivity() {
             startAdTimer()
         }
 
+        SoundManager.init(this)
+
         setContent {
             val settingsViewModel: SettingsViewModel = viewModel()
             val currentTheme    by settingsViewModel.currentTheme.collectAsStateWithLifecycle()
@@ -90,10 +96,22 @@ class MainActivity : ComponentActivity() {
                 .getSecretThemeFlow(this@MainActivity)
                 .collectAsState(initial = SecretTheme.NONE)
 
-            // Secret theme wins if active, otherwise use the normal theme colors
-            val hoshiColors = remember(currentTheme, secretTheme) {
-                getSecretHoshiColors(secretTheme) ?: getHoshiColors(currentTheme)
+            // When the user picks a theme in Settings, auto-clear any active secret
+            // theme so the Settings choice takes effect immediately.
+            LaunchedEffect(currentTheme) {
+                if (secretTheme != SecretTheme.NONE) {
+                    SecretThemeManager.setSecretTheme(this@MainActivity, SecretTheme.NONE)
+                }
             }
+
+            // Secret theme wins if active, otherwise use the normal theme colors.
+            // No remember() — must recompute every recomposition so switching back
+            // to NONE instantly restores the Settings theme without stale cache.
+            val hoshiColors = getSecretHoshiColors(secretTheme) ?: getHoshiColors(currentTheme)
+
+            // ── Sound mute state ──────────────────────────────────────────────
+            val soundMuted by SoundPrefs.getMutedFlow(this@MainActivity)
+                .collectAsState(initial = false)
 
             var lastAppliedLang by remember { mutableStateOf("") }
             LaunchedEffect(currentLanguage) {
@@ -105,41 +123,48 @@ class MainActivity : ComponentActivity() {
             }
 
             HoshiMemoThemeWithColors(hoshiColors = hoshiColors) {
-                val systemUi = rememberSystemUiController()
-                SideEffect {
-                    systemUi.setStatusBarColor(
-                        color     = hoshiColors.background,
-                        darkIcons = !hoshiColors.isDark
+                CompositionLocalProvider(
+                    LocalSoundConfig provides SoundConfig(
+                        secretTheme = secretTheme,
+                        muted       = soundMuted
                     )
-                    systemUi.setNavigationBarColor(
-                        color     = hoshiColors.navBar,
-                        darkIcons = !hoshiColors.isDark
-                    )
-                }
-
-                var showSplash by remember { mutableStateOf(true) }
-                LaunchedEffect(Unit) {
-                    delay(2000)
-                    showSplash = false
-                }
-
-                AnimatedContent(
-                    targetState = showSplash,
-                    transitionSpec = {
-                        fadeIn(tween(500)) togetherWith fadeOut(tween(400))
-                    },
-                    label = "splash_to_main"
-                ) { splash ->
-                    if (splash) {
-                        SplashContent(colors = hoshiColors)
-                    } else {
-                        val navController = rememberNavController()
-                        HoshiNavGraph(navController = navController)
+                ) {
+                    val systemUi = rememberSystemUiController()
+                    SideEffect {
+                        systemUi.setStatusBarColor(
+                            color     = hoshiColors.background,
+                            darkIcons = !hoshiColors.isDark
+                        )
+                        systemUi.setNavigationBarColor(
+                            color     = hoshiColors.navBar,
+                            darkIcons = !hoshiColors.isDark
+                        )
                     }
-                }
-            }
-        }
-    }
+
+                    var showSplash by remember { mutableStateOf(true) }
+                    LaunchedEffect(Unit) {
+                        delay(2000)
+                        showSplash = false
+                    }
+
+                    AnimatedContent(
+                        targetState = showSplash,
+                        transitionSpec = {
+                            fadeIn(tween(500)) togetherWith fadeOut(tween(400))
+                        },
+                        label = "splash_to_main"
+                    ) { splash ->
+                        if (splash) {
+                            SplashContent(colors = hoshiColors)
+                        } else {
+                            val navController = rememberNavController()
+                            HoshiNavGraph(navController = navController)
+                        }
+                    }
+                } // CompositionLocalProvider
+            } // HoshiMemoThemeWithColors
+        } // setContent
+    } // onCreate
 
     override fun onDestroy() {
         super.onDestroy()
@@ -147,6 +172,7 @@ class MainActivity : ComponentActivity() {
         timerRunnable  = null
         secondsElapsed = 0
         nextAdAt       = firstAdAt
+        SoundManager.release()
     }
 
     private fun startAdTimer() {

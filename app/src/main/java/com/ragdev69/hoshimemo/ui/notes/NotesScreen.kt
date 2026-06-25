@@ -28,6 +28,8 @@ import androidx.navigation.NavHostController
 import com.ragdev69.hoshimemo.R
 import com.ragdev69.hoshimemo.data.model.Note
 import com.ragdev69.hoshimemo.ui.navigation.Screen
+import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundManager
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.NotesViewModel
 import java.text.SimpleDateFormat
@@ -40,6 +42,7 @@ fun NotesScreen(
     viewModel: NotesViewModel = viewModel()
 ) {
     val colors      = LocalHoshiColors.current
+    val soundConfig = LocalSoundConfig.current
     val notes       by viewModel.filteredNotes.collectAsStateWithLifecycle()
     val isGrid      by viewModel.isGridLayout.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -283,12 +286,12 @@ fun NotesScreen(
                                     isSelectionMode = isSelectionMode,
                                     onClick     = {
                                         if (isSelectionMode) {
-                                            // In selection mode: tap toggles selection
                                             selectedIds = if (isSelected)
                                                 selectedIds - note.id
                                             else
                                                 selectedIds + note.id
                                         } else {
+                                            SoundManager.playNav(soundConfig.secretTheme, soundConfig.muted)
                                             navController.navigate(
                                                 Screen.NoteEditor.createRoute(
                                                     note.id, note.title, note.content
@@ -297,7 +300,7 @@ fun NotesScreen(
                                         }
                                     },
                                     onLongClick = {
-                                        // Long press always enters/extends selection mode
+                                        // In selection mode: tap toggles selection
                                         selectedIds = selectedIds + note.id
                                     }
                                 )
@@ -327,6 +330,7 @@ fun NotesScreen(
                                             else
                                                 selectedIds + note.id
                                         } else {
+                                            SoundManager.playNav(soundConfig.secretTheme, soundConfig.muted)
                                             navController.navigate(
                                                 Screen.NoteEditor.createRoute(
                                                     note.id, note.title, note.content
@@ -348,7 +352,10 @@ fun NotesScreen(
         // ── FAB (hidden during selection mode) ────────────────
         if (!isSelectionMode) {
             FloatingActionButton(
-                onClick        = { navController.navigate(Screen.NoteEditor.createRoute()) },
+                onClick        = {
+                    SoundManager.playNav(soundConfig.secretTheme, soundConfig.muted)
+                    navController.navigate(Screen.NoteEditor.createRoute())
+                },
                 modifier       = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 20.dp, bottom = 20.dp)

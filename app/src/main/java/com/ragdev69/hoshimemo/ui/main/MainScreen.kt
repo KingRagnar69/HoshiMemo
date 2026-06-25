@@ -31,6 +31,8 @@ import com.ragdev69.hoshimemo.ui.settings.SettingsScreen
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.ui.todo.TodoScreen
 import com.ragdev69.hoshimemo.ui.trash.TrashScreen
+import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundManager
 
 sealed class BottomTab(
     val labelRes: Int,
@@ -58,7 +60,8 @@ fun MainScreen(
     showBottomBar: Boolean = true
 ) {
 
-    val colors = LocalHoshiColors.current
+    val colors      = LocalHoshiColors.current
+    val soundConfig = LocalSoundConfig.current
 
     var selectedTab by remember {
         mutableStateOf<BottomTab>(BottomTab.Notes)
@@ -136,6 +139,7 @@ fun MainScreen(
                                     selected = selected,
 
                                     onClick = {
+                                        SoundManager.playNav(soundConfig.secretTheme, soundConfig.muted)
                                         selectedTab = tab
                                     },
 
@@ -247,6 +251,7 @@ fun MainScreen(
             FloatingActionButton(
 
                 onClick = {
+                    SoundManager.playNav(soundConfig.secretTheme, soundConfig.muted)
                     showDiary = true
                 },
 

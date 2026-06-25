@@ -38,6 +38,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
+import com.ragdev69.hoshimemo.ui.sound.SoundManager
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.DiaryViewModel
 import java.time.LocalDate
@@ -411,16 +413,13 @@ private fun DiaryEditor(
     readOnly: Boolean = false,
     dateLabel: String = ""
 ) {
-    val colors = LocalHoshiColors.current
+    val colors      = LocalHoshiColors.current
+    val soundConfig = LocalSoundConfig.current
 
-    // FIX: fieldValue must NOT be re-keyed on every change to `value`, since
-    // `value` is updated on every keystroke via onChange (it flows: type →
-    // onChange(text) → parent's diaryDraft → back in as this `value` param).
-    // Re-keying with remember(value) recreated a fresh TextFieldValue with
-    // the cursor forced to the END on every single keystroke — so you could
-    // never type in the middle of existing text, only ever append at the end.
-    // Fix: seed fieldValue ONCE, then only resync from `value` when it changes
-    // for a reason OTHER than this field's own typing (e.g. switching dates).
+    // Debounce timestamps for write and delete sounds
+    var lastWriteSoundMs by remember { mutableLongStateOf(0L) }
+    var lastDelSoundMs   by remember { mutableLongStateOf(0L) }
+
     var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     LaunchedEffect(value) {
         if (fieldValue.text != value) {
@@ -429,6 +428,21 @@ private fun DiaryEditor(
     }
 
     fun applyChange(newValue: TextFieldValue) {
+        val now = System.currentTimeMillis()
+        when {
+            newValue.text.length > fieldValue.text.length -> {
+                if (!readOnly && now - lastWriteSoundMs > 400L) {
+                    lastWriteSoundMs = now
+                    SoundManager.playWrite(soundConfig.secretTheme, soundConfig.muted)
+                }
+            }
+            newValue.text.length < fieldValue.text.length -> {
+                if (!readOnly && now - lastDelSoundMs > 400L) {
+                    lastDelSoundMs = now
+                    SoundManager.playDel(soundConfig.secretTheme, soundConfig.muted)
+                }
+            }
+        }
         fieldValue = newValue
         onChange(newValue.text)
     }
