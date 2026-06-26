@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ragdev69.hoshimemo.ui.sound.SoundPrefs
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.ui.theme.SecretTheme
 import kotlinx.coroutines.launch
@@ -57,6 +58,8 @@ fun SecretScreen(
         .collectAsState(initial = SecretTheme.NONE)
     val activeIconIndex by SecretThemeManager.getActiveIconFlow(context)
         .collectAsState(initial = 0)
+    val soundMuted by SoundPrefs.getMutedFlow(context)
+        .collectAsState(initial = false)
 
     var currentSection by remember { mutableStateOf(Section.HUB) }
 
@@ -111,7 +114,41 @@ fun SecretScreen(
                         )
                     }
 
-                    // ── Section 2: App Icons ──────────────────────────────────
+                    // ── Section 2: Theme Sounds ───────────────────────────────
+                    SectionCard(
+                        title      = "Theme Sounds",
+                        subtitle   = "Nav, typing & delete sounds for secret themes.",
+                        emoji      = if (soundMuted) "🔇" else "🔊",
+                        background = colors.card,
+                        border     = colors.border
+                    ) {
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                if (soundMuted) "Sounds off" else "Sounds on",
+                                color      = if (soundMuted) Color.White.copy(alpha = 0.4f) else colors.primary,
+                                fontSize   = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Switch(
+                                checked         = !soundMuted,
+                                onCheckedChange = { on ->
+                                    scope.launch { SoundPrefs.setMuted(context, !on) }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor   = Color.White,
+                                    checkedTrackColor   = colors.primary,
+                                    uncheckedThumbColor = Color.White.copy(alpha = 0.6f),
+                                    uncheckedTrackColor = Color.White.copy(alpha = 0.15f)
+                                )
+                            )
+                        }
+                    }
+
+                    // ── Section 3: App Icons ──────────────────────────────────
                     SectionCard(
                         title      = "Secret Icons",
                         subtitle   = "Changes how the app looks on your home screen.",
@@ -131,7 +168,7 @@ fun SecretScreen(
                         )
                     }
 
-                    // ── Section 3: Star Catcher ───────────────────────────────
+                    // ── Section 4: Star Catcher ───────────────────────────────
                     SectionCard(
                         title      = "Star Catcher",
                         subtitle   = "Catch falling stars. They get faster. Don't miss.",
@@ -143,7 +180,7 @@ fun SecretScreen(
                         Text("Tap to play →", color = colors.primary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
 
-                    // ── Section 4: Future Letters ─────────────────────────────
+                    // ── Section 5: Future Letters ─────────────────────────────
                     SectionCard(
                         title      = "Letters to Future Me",
                         subtitle   = "Write something. Lock it. Read it when the time comes.",

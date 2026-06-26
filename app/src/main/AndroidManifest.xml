@@ -18,11 +18,7 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-7539583464292210~9937357896"/>
 
-        <!--
-            MainActivity has NO intent-filter here intentionally.
-            The launcher entry is handled by activity-alias entries below.
-            This prevents duplicate icons when aliases are switched.
-        -->
+        <!-- MainActivity has NO intent-filter — launcher handled by aliases below -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,11 +27,7 @@
             android:theme="@style/Theme.HoshiMemo">
         </activity>
 
-        <!--
-            DEFAULT icon alias — enabled by default, acts as the normal launcher.
-            Switching back to "Default" in the secret screen re-enables this
-            and disables all others.
-        -->
+        <!-- DEFAULT — enabled by default -->
         <activity-alias
             android:name=".MainActivityDefaultIcon"
             android:targetActivity=".MainActivity"
@@ -57,7 +49,7 @@
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_gothic"
-            android:roundIcon="@mipmap/ic_launcher_gothic"
+            android:roundIcon="@mipmap/ic_launcher_gothic_round"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -72,7 +64,7 @@
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_dragon"
-            android:roundIcon="@mipmap/ic_launcher_dragon"
+            android:roundIcon="@mipmap/ic_launcher_dragon_round"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -87,7 +79,7 @@
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_scifi"
-            android:roundIcon="@mipmap/ic_launcher_scifi"
+            android:roundIcon="@mipmap/ic_launcher_scifi_round"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
