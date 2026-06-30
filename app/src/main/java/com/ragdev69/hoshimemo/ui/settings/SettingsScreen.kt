@@ -1,5 +1,6 @@
 package com.ragdev69.hoshimemo.ui.settings
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn; import androidx.compose.animation.fadeOut
@@ -10,12 +11,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,6 +34,7 @@ import com.ragdev69.hoshimemo.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val colors       = LocalHoshiColors.current
+    val context      = LocalContext.current
     val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
     val currentLang  by viewModel.currentLanguage.collectAsStateWithLifecycle()
 
@@ -85,6 +89,47 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         Column(modifier = Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             LocaleHelper.supportedLanguages.forEach { lang ->
                 SettingsLanguageRow(language = lang, selected = lang.code == currentLang, colors = colors, onClick = { viewModel.setLanguage(lang.code) })
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+        SettingsSectionLabel(stringResource(R.string.settings_restart), colors)
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(colors.card)
+                .border(1.dp, colors.border, RoundedCornerShape(16.dp))
+                .clickable {
+                    // Hard restart: relaunch MainActivity fresh and kill the
+                    // current process so any broken in-memory state is gone.
+                    val packageManager = context.packageManager
+                    val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+                    intent?.let {
+                        val componentName = it.component
+                        val restartIntent = android.content.Intent.makeRestartActivityTask(componentName)
+                        context.startActivity(restartIntent)
+                        Runtime.getRuntime().exit(0)
+                    }
+                }
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(36.dp).clip(CircleShape)
+                        .background(colors.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_restart_app), style = MaterialTheme.typography.titleMedium.copy(color = colors.text, fontWeight = FontWeight.Bold))
+                    Text(stringResource(R.string.settings_restart_subtitle), style = MaterialTheme.typography.labelSmall.copy(color = colors.textSecondary))
+                }
             }
         }
 

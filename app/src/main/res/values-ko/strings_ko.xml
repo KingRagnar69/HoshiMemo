@@ -74,4 +74,57 @@
     <string name="settings_version">호시 메모 v1.0</string>
     <string name="common_cancel">취소</string>
     <string name="common_save">저장</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">비밀 금고</string>
+    <string name="secret_found">발견했군요.</string>
+    <string name="secret_code">코드: %1$s</string>
+    <string name="secret_themes_title">숨겨진 테마</string>
+    <string name="secret_themes_subtitle">여기서만 변경 가능. 다른 곳에서는 보이지 않음.</string>
+    <string name="secret_themes_hint">탭하여 적용. 기본 테마는 설정에서.</string>
+    <string name="secret_sounds_title">테마 소리</string>
+    <string name="secret_sounds_subtitle">비밀 테마의 탐색, 입력 및 삭제 소리.</string>
+    <string name="secret_sounds_on">소리 켜짐</string>
+    <string name="secret_sounds_off">소리 꺼짐</string>
+    <string name="secret_icons_title">비밀 아이콘</string>
+    <string name="secret_icons_subtitle">홈 화면에서 앱의 모양을 바꿉니다.</string>
+    <string name="secret_icons_warning">⚠ Android Studio의 mipmap에 아이콘 이미지를 넣으세요.</string>
+    <string name="secret_star_title">별 잡기</string>
+    <string name="secret_star_subtitle">떨어지는 별을 잡아요. 점점 빨라져요. 놓치지 마세요.</string>
+    <string name="secret_star_tap">탭하여 플레이 →</string>
+    <string name="secret_letter_title">미래의 나에게 편지</string>
+    <string name="secret_letter_subtitle">무언가를 써요. 잠그세요. 때가 오면 읽으세요.</string>
+    <string name="secret_letter_tap">편지함 열기 →</string>
+    <string name="star_game_title">별 잡기</string>
+    <string name="star_game_desc">별이 사라지기 전에 잡아요.\n점수가 오를수록 빨라져요.</string>
+    <string name="star_game_best">최고: %1$d ⭐</string>
+    <string name="star_game_play">플레이</string>
+    <string name="star_game_back">뒤로</string>
+    <string name="star_game_hint">탭하여 캐처 이동</string>
+    <string name="star_game_over">별이 사라졌어요</string>
+    <string name="star_game_score">점수: %1$d ⭐</string>
+    <string name="star_game_new_best">신기록! 🎉</string>
+    <string name="star_game_try_again">다시 시도</string>
+    <string name="letter_screen_title">미래의 나에게 편지</string>
+    <string name="letter_empty_msg">아직 편지가 없어요.\n미래의 나에게 편지를 써보세요.</string>
+    <string name="letter_write_btn">편지 쓰기</string>
+    <string name="letter_opens_on">열리는 날: %1$s</string>
+    <string name="letter_opens_in_days">%1$d일 후 열림</string>
+    <string name="letter_opens_in_day">1일 후 열림</string>
+    <string name="letter_written_on">작성일: %1$s</string>
+    <string name="letter_compose_title">미래의 나에게 쓰기</string>
+    <string name="letter_title_label">제목</string>
+    <string name="letter_content_label">당신의 편지...</string>
+    <string name="letter_unlock_on">잠금 해제일</string>
+    <string name="letter_cancel">취소</string>
+    <string name="letter_seal">봉인 &amp; 잠금 🔒</string>
+    <string name="letter_ok">확인</string>
+    <string name="letter_close">닫기</string>
+    <string name="letter_written_date">%1$s에 작성됨</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">재시작</string>
+    <string name="settings_restart_app">앱 재시작</string>
+    <string name="settings_restart_subtitle">제대로 작동하지 않을 때 문제를 해결합니다</string>
+    <string name="todo_sound_toggle">소리 전환</string>
 </resources>

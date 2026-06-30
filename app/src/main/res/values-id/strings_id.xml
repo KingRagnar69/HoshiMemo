@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Brankas Rahasia</string>
+    <string name="secret_found">Kamu menemukannya.</string>
+    <string name="secret_code">Kode: %1$s</string>
+    <string name="secret_themes_title">Tema Tersembunyi</string>
+    <string name="secret_themes_subtitle">Hanya bisa diganti dari sini. Tidak terlihat di tempat lain.</string>
+    <string name="secret_themes_hint">Ketuk untuk menerapkan. Untuk tema normal, pergi ke Pengaturan.</string>
+    <string name="secret_sounds_title">Suara Tema</string>
+    <string name="secret_sounds_subtitle">Suara nav, ketik &amp; hapus untuk tema rahasia.</string>
+    <string name="secret_sounds_on">Suara aktif</string>
+    <string name="secret_sounds_off">Suara nonaktif</string>
+    <string name="secret_icons_title">Ikon Rahasia</string>
+    <string name="secret_icons_subtitle">Mengubah tampilan app di layar utama.</string>
+    <string name="secret_icons_warning">⚠ Letakkan gambar ikon ke mipmap di Android Studio.</string>
+    <string name="secret_star_title">Penangkap Bintang</string>
+    <string name="secret_star_subtitle">Tangkap bintang yang jatuh. Semakin cepat. Jangan sampai miss.</string>
+    <string name="secret_star_tap">Ketuk untuk bermain →</string>
+    <string name="secret_letter_title">Surat untuk Masa Depan</string>
+    <string name="secret_letter_subtitle">Tulis sesuatu. Kunci. Baca saat waktunya tiba.</string>
+    <string name="secret_letter_tap">Buka kotak surat →</string>
+    <string name="star_game_title">Penangkap Bintang</string>
+    <string name="star_game_desc">Tangkap bintang sebelum menghilang.\nMakin cepat seiring skor naik.</string>
+    <string name="star_game_best">Terbaik: %1$d ⭐</string>
+    <string name="star_game_play">Main</string>
+    <string name="star_game_back">Kembali</string>
+    <string name="star_game_hint">Ketuk untuk menggerakkan catcher</string>
+    <string name="star_game_over">Bintang hilang</string>
+    <string name="star_game_score">Skor: %1$d ⭐</string>
+    <string name="star_game_new_best">Rekor baru! 🎉</string>
+    <string name="star_game_try_again">Coba lagi</string>
+    <string name="letter_screen_title">Surat untuk Masa Depan</string>
+    <string name="letter_empty_msg">Belum ada surat.\nTulis satu untuk dirimu di masa depan.</string>
+    <string name="letter_write_btn">Tulis surat</string>
+    <string name="letter_opens_on">Dibuka: %1$s</string>
+    <string name="letter_opens_in_days">Dibuka dalam %1$d hari</string>
+    <string name="letter_opens_in_day">Dibuka dalam 1 hari</string>
+    <string name="letter_written_on">Ditulis: %1$s</string>
+    <string name="letter_compose_title">Tulis untuk Masa Depanmu</string>
+    <string name="letter_title_label">Judul</string>
+    <string name="letter_content_label">Suratmu...</string>
+    <string name="letter_unlock_on">Buka kunci pada</string>
+    <string name="letter_cancel">Batal</string>
+    <string name="letter_seal">Segel &amp; Kunci 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Tutup</string>
+    <string name="letter_written_date">Ditulis pada %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">MULAI ULANG</string>
+    <string name="settings_restart_app">Mulai ulang app</string>
+    <string name="settings_restart_subtitle">Memperbaiki gangguan jika ada yang tidak berfungsi</string>
+    <string name="todo_sound_toggle">Aktifkan/nonaktifkan suara</string>
 </resources>

@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -36,10 +37,12 @@ import com.ragdev69.hoshimemo.R
 import com.ragdev69.hoshimemo.data.model.TodoItem
 import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
 import com.ragdev69.hoshimemo.ui.sound.SoundManager
+import com.ragdev69.hoshimemo.ui.sound.SoundPrefs
 import com.ragdev69.hoshimemo.ui.theme.HoshiColors
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
 import com.ragdev69.hoshimemo.viewmodel.TodoViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.absoluteValue
@@ -51,7 +54,10 @@ import kotlin.math.roundToInt
 @Composable
 fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
     val colors           = LocalHoshiColors.current
+    val context          = LocalContext.current
+    val scope            = rememberCoroutineScope()
     val soundConfig      = LocalSoundConfig.current
+    val soundMuted       by SoundPrefs.getMutedFlow(context).collectAsStateWithLifecycle(initialValue = soundConfig.muted)
     val todos            by viewModel.todos.collectAsStateWithLifecycle()
     val ungroupedPending by viewModel.ungroupedPending.collectAsStateWithLifecycle()
     val ungroupedDone    by viewModel.ungroupedCompleted.collectAsStateWithLifecycle()
@@ -358,6 +364,18 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                         Text(stringResource(R.string.todo_title),
                             style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.text),
                             modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = { scope.launch { SoundPrefs.setMuted(context, !soundMuted) } },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                if (soundMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                                contentDescription = stringResource(R.string.todo_sound_toggle),
+                                tint = if (soundMuted) colors.textSecondary.copy(alpha = 0.5f) else colors.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50.dp))

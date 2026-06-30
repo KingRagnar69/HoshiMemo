@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Gizli Kasa</string>
+    <string name="secret_found">Buldun.</string>
+    <string name="secret_code">Kod: %1$s</string>
+    <string name="secret_themes_title">Gizli Temalar</string>
+    <string name="secret_themes_subtitle">Yalnızca buradan değiştirilebilir. Başka yerde görünmez.</string>
+    <string name="secret_themes_hint">Uygulamak için dokun. Normal tema için Ayarlar\'a git.</string>
+    <string name="secret_sounds_title">Tema Sesleri</string>
+    <string name="secret_sounds_subtitle">Gizli temalar için nav, yazma &amp; silme sesleri.</string>
+    <string name="secret_sounds_on">Sesler açık</string>
+    <string name="secret_sounds_off">Sesler kapalı</string>
+    <string name="secret_icons_title">Gizli Simgeler</string>
+    <string name="secret_icons_subtitle">Uygulamanın ana ekranda nasıl göründüğünü değiştirir.</string>
+    <string name="secret_icons_warning">⚠ Simge görsellerini Android Studio\'da mipmap\'e koy.</string>
+    <string name="secret_star_title">Yıldız Yakalayıcı</string>
+    <string name="secret_star_subtitle">Düşen yıldızları yakala. Giderek hızlanıyorlar. Kaçırma.</string>
+    <string name="secret_star_tap">Oynamak için dokun →</string>
+    <string name="secret_letter_title">Gelecekteki Kendime Mektuplar</string>
+    <string name="secret_letter_subtitle">Bir şey yaz. Kilitle. Zamanı gelince oku.</string>
+    <string name="secret_letter_tap">Posta kutusunu aç →</string>
+    <string name="star_game_title">Yıldız Yakalayıcı</string>
+    <string name="star_game_desc">Yıldızlar kaybolmadan yakala.\nSkor arttıkça hızlanıyorlar.</string>
+    <string name="star_game_best">En iyi: %1$d ⭐</string>
+    <string name="star_game_play">Oyna</string>
+    <string name="star_game_back">Geri</string>
+    <string name="star_game_hint">Tutucu\'yu hareket ettirmek için dokun</string>
+    <string name="star_game_over">Yıldızlar gitti</string>
+    <string name="star_game_score">Puan: %1$d ⭐</string>
+    <string name="star_game_new_best">Yeni rekor! 🎉</string>
+    <string name="star_game_try_again">Tekrar dene</string>
+    <string name="letter_screen_title">Gelecekteki Kendime Mektuplar</string>
+    <string name="letter_empty_msg">Henüz mektup yok.\nGelecekteki kendin için bir tane yaz.</string>
+    <string name="letter_write_btn">Mektup yaz</string>
+    <string name="letter_opens_on">Açılıyor: %1$s</string>
+    <string name="letter_opens_in_days">%1$d gün sonra açılıyor</string>
+    <string name="letter_opens_in_day">1 gün sonra açılıyor</string>
+    <string name="letter_written_on">Yazıldı: %1$s</string>
+    <string name="letter_compose_title">Gelecekteki Kendine Yaz</string>
+    <string name="letter_title_label">Başlık</string>
+    <string name="letter_content_label">Mektubun...</string>
+    <string name="letter_unlock_on">Kilidi aç tarihi</string>
+    <string name="letter_cancel">İptal</string>
+    <string name="letter_seal">Mühürle &amp; Kilitle 🔒</string>
+    <string name="letter_ok">Tamam</string>
+    <string name="letter_close">Kapat</string>
+    <string name="letter_written_date">%1$s tarihinde yazıldı</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">YENİDEN BAŞLAT</string>
+    <string name="settings_restart_app">Uygulamayı yeniden başlat</string>
+    <string name="settings_restart_subtitle">Bir şey doğru çalışmıyorsa sorunları giderir</string>
+    <string name="todo_sound_toggle">Sesi aç/kapat</string>
 </resources>

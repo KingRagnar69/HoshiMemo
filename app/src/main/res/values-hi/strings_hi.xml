@@ -74,4 +74,57 @@
     <string name="settings_version">होशी मेमो v1.0</string>
     <string name="common_cancel">रद्द करें</string>
     <string name="common_save">सेव करें</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">गुप्त तिजोरी</string>
+    <string name="secret_found">आपने इसे खोज लिया।</string>
+    <string name="secret_code">कोड: %1$s</string>
+    <string name="secret_themes_title">छुपे हुए थीम</string>
+    <string name="secret_themes_subtitle">केवल यहाँ से बदला जा सकता है। बाकी जगह अदृश्य।</string>
+    <string name="secret_themes_hint">लागू करने के लिए टैप करें। सामान्य थीम के लिए सेटिंग्स में जाएं।</string>
+    <string name="secret_sounds_title">थीम ध्वनियाँ</string>
+    <string name="secret_sounds_subtitle">गुप्त थीम के लिए नेव, टाइपिंग और डिलीट ध्वनियाँ।</string>
+    <string name="secret_sounds_on">ध्वनि चालू</string>
+    <string name="secret_sounds_off">ध्वनि बंद</string>
+    <string name="secret_icons_title">गुप्त आइकन</string>
+    <string name="secret_icons_subtitle">होम स्क्रीन पर ऐप कैसे दिखता है, यह बदलता है।</string>
+    <string name="secret_icons_warning">⚠ Android Studio में mipmap में आइकन इमेज रखें।</string>
+    <string name="secret_star_title">स्टार कैचर</string>
+    <string name="secret_star_subtitle">गिरते तारे पकड़ो। वे तेज होते जाते हैं। चूको मत।</string>
+    <string name="secret_star_tap">खेलने के लिए टैप करें →</string>
+    <string name="secret_letter_title">भविष्य के मुझे पत्र</string>
+    <string name="secret_letter_subtitle">कुछ लिखो। लॉक करो। समय आने पर पढ़ो।</string>
+    <string name="secret_letter_tap">लेटरबॉक्स खोलें →</string>
+    <string name="star_game_title">स्टार कैचर</string>
+    <string name="star_game_desc">तारे गायब होने से पहले पकड़ो।\nस्कोर बढ़ने पर वे तेज गिरते हैं।</string>
+    <string name="star_game_best">सर्वश्रेष्ठ: %1$d ⭐</string>
+    <string name="star_game_play">खेलें</string>
+    <string name="star_game_back">वापस</string>
+    <string name="star_game_hint">कैचर हिलाने के लिए टैप करें</string>
+    <string name="star_game_over">तारे चले गए</string>
+    <string name="star_game_score">स्कोर: %1$d ⭐</string>
+    <string name="star_game_new_best">नया रिकॉर्ड! 🎉</string>
+    <string name="star_game_try_again">फिर कोशिश करें</string>
+    <string name="letter_screen_title">भविष्य के मुझे पत्र</string>
+    <string name="letter_empty_msg">अभी कोई पत्र नहीं।\nभविष्य के खुद के लिए एक लिखें।</string>
+    <string name="letter_write_btn">पत्र लिखें</string>
+    <string name="letter_opens_on">खुलेगा: %1$s</string>
+    <string name="letter_opens_in_days">%1$d दिन में खुलेगा</string>
+    <string name="letter_opens_in_day">1 दिन में खुलेगा</string>
+    <string name="letter_written_on">लिखा गया: %1$s</string>
+    <string name="letter_compose_title">भविष्य के खुद को लिखें</string>
+    <string name="letter_title_label">शीर्षक</string>
+    <string name="letter_content_label">तुम्हारा पत्र...</string>
+    <string name="letter_unlock_on">अनलॉक दिनांक</string>
+    <string name="letter_cancel">रद्द करें</string>
+    <string name="letter_seal">सील &amp; लॉक 🔒</string>
+    <string name="letter_ok">ठीक है</string>
+    <string name="letter_close">बंद करें</string>
+    <string name="letter_written_date">%1$s को लिखा गया</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">पुनः आरंभ</string>
+    <string name="settings_restart_app">ऐप पुनः आरंभ करें</string>
+    <string name="settings_restart_subtitle">अगर कुछ ठीक से काम नहीं कर रहा तो यह ठीक करता है</string>
+    <string name="todo_sound_toggle">ध्वनि टॉगल करें</string>
 </resources>

@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Két Bí Mật</string>
+    <string name="secret_found">Bạn đã tìm thấy nó.</string>
+    <string name="secret_code">Mã: %1$s</string>
+    <string name="secret_themes_title">Chủ đề ẩn</string>
+    <string name="secret_themes_subtitle">Chỉ có thể thay đổi tại đây. Ẩn ở nơi khác.</string>
+    <string name="secret_themes_hint">Nhấn để áp dụng. Để dùng chủ đề thường, vào Cài đặt.</string>
+    <string name="secret_sounds_title">Âm thanh chủ đề</string>
+    <string name="secret_sounds_subtitle">Âm thanh điều hướng, gõ phím &amp; xóa cho chủ đề bí mật.</string>
+    <string name="secret_sounds_on">Bật âm thanh</string>
+    <string name="secret_sounds_off">Tắt âm thanh</string>
+    <string name="secret_icons_title">Biểu tượng bí mật</string>
+    <string name="secret_icons_subtitle">Thay đổi giao diện ứng dụng trên màn hình chính.</string>
+    <string name="secret_icons_warning">⚠ Đặt ảnh biểu tượng vào mipmap trong Android Studio.</string>
+    <string name="secret_star_title">Bắt sao</string>
+    <string name="secret_star_subtitle">Bắt các ngôi sao rơi. Chúng ngày càng nhanh hơn. Đừng bỏ lỡ.</string>
+    <string name="secret_star_tap">Nhấn để chơi →</string>
+    <string name="secret_letter_title">Thư gửi tương lai</string>
+    <string name="secret_letter_subtitle">Viết gì đó. Khóa lại. Đọc khi đến lúc.</string>
+    <string name="secret_letter_tap">Mở hộp thư →</string>
+    <string name="star_game_title">Bắt sao</string>
+    <string name="star_game_desc">Bắt sao trước khi chúng biến mất.\nChúng rơi nhanh hơn khi điểm tăng.</string>
+    <string name="star_game_best">Tốt nhất: %1$d ⭐</string>
+    <string name="star_game_play">Chơi</string>
+    <string name="star_game_back">Quay lại</string>
+    <string name="star_game_hint">Nhấn để di chuyển catcher</string>
+    <string name="star_game_over">Sao đã biến mất</string>
+    <string name="star_game_score">Điểm: %1$d ⭐</string>
+    <string name="star_game_new_best">Kỷ lục mới! 🎉</string>
+    <string name="star_game_try_again">Thử lại</string>
+    <string name="letter_screen_title">Thư gửi tương lai</string>
+    <string name="letter_empty_msg">Chưa có thư nào.\nHãy viết thư cho tương lai của bạn.</string>
+    <string name="letter_write_btn">Viết thư</string>
+    <string name="letter_opens_on">Mở ngày: %1$s</string>
+    <string name="letter_opens_in_days">Mở sau %1$d ngày</string>
+    <string name="letter_opens_in_day">Mở sau 1 ngày</string>
+    <string name="letter_written_on">Viết lúc: %1$s</string>
+    <string name="letter_compose_title">Viết cho tương lai của bạn</string>
+    <string name="letter_title_label">Tiêu đề</string>
+    <string name="letter_content_label">Thư của bạn...</string>
+    <string name="letter_unlock_on">Mở khóa ngày</string>
+    <string name="letter_cancel">Hủy</string>
+    <string name="letter_seal">Niêm phong &amp; Khóa 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Đóng</string>
+    <string name="letter_written_date">Viết lúc %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">KHỞI ĐỘNG LẠI</string>
+    <string name="settings_restart_app">Khởi động lại ứng dụng</string>
+    <string name="settings_restart_subtitle">Khắc phục lỗi nếu có gì đó không hoạt động đúng</string>
+    <string name="todo_sound_toggle">Bật/tắt âm thanh</string>
 </resources>

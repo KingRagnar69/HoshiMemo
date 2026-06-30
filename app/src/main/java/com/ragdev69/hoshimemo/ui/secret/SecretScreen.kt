@@ -275,12 +275,6 @@ private fun ThemeSelector(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Hint — tapping any theme applies it; go to Settings to use normal themes
-        Text(
-            "Tap to apply. To return to your normal theme, go to Settings.",
-            color    = Color.White.copy(alpha = 0.35f),
-            fontSize = 11.sp
-        )
         Spacer(Modifier.height(2.dp))
 
         themes.forEach { (theme, label, emoji) ->
@@ -362,12 +356,7 @@ private fun IconSelector(
                 }
             }
         }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "⚠ Drop icon images into mipmap in Android Studio. See AndroidManifest for alias names.",
-            color    = Color.White.copy(alpha = 0.35f),
-            fontSize = 11.sp
-        )
+
     }
 }
 

@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Geheime Kluis</string>
+    <string name="secret_found">Je hebt het gevonden.</string>
+    <string name="secret_code">Code: %1$s</string>
+    <string name="secret_themes_title">Verborgen Thema\'s</string>
+    <string name="secret_themes_subtitle">Alleen hier te wijzigen. Elders onzichtbaar.</string>
+    <string name="secret_themes_hint">Tik om toe te passen. Voor normaal thema, ga naar Instellingen.</string>
+    <string name="secret_sounds_title">Themageluid</string>
+    <string name="secret_sounds_subtitle">Nav-, typ- en verwijdergeluiden voor geheime thema\'s.</string>
+    <string name="secret_sounds_on">Geluid aan</string>
+    <string name="secret_sounds_off">Geluid uit</string>
+    <string name="secret_icons_title">Geheime Iconen</string>
+    <string name="secret_icons_subtitle">Verandert hoe de app eruitziet op het startscherm.</string>
+    <string name="secret_icons_warning">⚠ Zet icoonafbeeldingen in mipmap in Android Studio.</string>
+    <string name="secret_star_title">Sterrenvanger</string>
+    <string name="secret_star_subtitle">Vang vallende sterren. Ze worden sneller. Mis ze niet.</string>
+    <string name="secret_star_tap">Tik om te spelen →</string>
+    <string name="secret_letter_title">Brieven aan mezelf</string>
+    <string name="secret_letter_subtitle">Schrijf iets. Vergrendel het. Lees het als de tijd komt.</string>
+    <string name="secret_letter_tap">Open brievenbus →</string>
+    <string name="star_game_title">Sterrenvanger</string>
+    <string name="star_game_desc">Vang sterren voor ze verdwijnen.\nZe vallen sneller naarmate de score stijgt.</string>
+    <string name="star_game_best">Beste: %1$d ⭐</string>
+    <string name="star_game_play">Spelen</string>
+    <string name="star_game_back">Terug</string>
+    <string name="star_game_hint">Tik om de vanger te bewegen</string>
+    <string name="star_game_over">Sterren weg</string>
+    <string name="star_game_score">Score: %1$d ⭐</string>
+    <string name="star_game_new_best">Nieuw record! 🎉</string>
+    <string name="star_game_try_again">Opnieuw proberen</string>
+    <string name="letter_screen_title">Brieven aan mezelf</string>
+    <string name="letter_empty_msg">Nog geen brieven.\nSchrijf een brief aan je toekomstige zelf.</string>
+    <string name="letter_write_btn">Brief schrijven</string>
+    <string name="letter_opens_on">Opent op: %1$s</string>
+    <string name="letter_opens_in_days">Opent over %1$d dagen</string>
+    <string name="letter_opens_in_day">Opent over 1 dag</string>
+    <string name="letter_written_on">Geschreven op: %1$s</string>
+    <string name="letter_compose_title">Schrijf aan je toekomstige zelf</string>
+    <string name="letter_title_label">Titel</string>
+    <string name="letter_content_label">Jouw brief...</string>
+    <string name="letter_unlock_on">Ontgrendelen op</string>
+    <string name="letter_cancel">Annuleren</string>
+    <string name="letter_seal">Verzegel &amp; Vergrendel 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Sluiten</string>
+    <string name="letter_written_date">Geschreven op %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">HERSTART</string>
+    <string name="settings_restart_app">App herstarten</string>
+    <string name="settings_restart_subtitle">Lost storingen op als iets niet goed werkt</string>
+    <string name="todo_sound_toggle">Geluid in-/uitschakelen</string>
 </resources>

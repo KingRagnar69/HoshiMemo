@@ -1,19 +1,124 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
--->
-<data-extraction-rules>
-    <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
-    </cloud-backup>
-    <!--
-    <device-transfer>
-        <include .../>
-        <exclude .../>
-    </device-transfer>
-    -->
-</data-extraction-rules>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hoshi Memo</string>
+    <string name="app_tagline">✨ Vos pensées, magnifiquement conservées</string>
+    <string name="tab_notes">Notes</string>
+    <string name="tab_todo">Tâches</string>
+    <string name="tab_trash">Corbeille</string>
+    <string name="tab_profile">Profil</string>
+    <string name="tab_settings">Paramètres</string>
+    <string name="notes_title">Hoshi Memo ⭐</string>
+    <string name="notes_count">%1$d notes</string>
+    <string name="notes_search_hint">🔍  Rechercher des notes...</string>
+    <string name="notes_empty_title">Aucune note</string>
+    <string name="notes_empty_subtitle">Appuyez sur + pour créer votre première note</string>
+    <string name="notes_sort_modified">Date de modification</string>
+    <string name="notes_sort_created">Date de création</string>
+    <string name="notes_sort_name">Nom A-Z</string>
+    <string name="notes_untitled">Sans titre</string>
+    <string name="editor_title_hint">Titre</string>
+    <string name="editor_content_hint">Commencez à écrire vos pensées...</string>
+    <string name="editor_word_count">%1$d mots · %2$d caractères</string>
+    <string name="editor_move_to_trash">Mettre à la corbeille?</string>
+    <string name="editor_move_to_trash_msg">Cette note sera déplacée à la corbeille.</string>
+    <string name="editor_move">Déplacer</string>
+    <string name="editor_cancel">Annuler</string>
+    <string name="trash_title">Corbeille 🗑️</string>
+    <string name="trash_empty_title">La corbeille est vide</string>
+    <string name="trash_empty_subtitle">Les notes supprimées apparaissent ici</string>
+    <string name="trash_empty_action">Vider la corbeille</string>
+    <string name="trash_empty_dialog_title">Vider la corbeille?</string>
+    <string name="trash_empty_dialog_msg">%1$d notes seront supprimées définitivement.</string>
+    <string name="trash_delete_dialog_title">Supprimer définitivement?</string>
+    <string name="trash_delete_dialog_msg">"%1$s" sera supprimée définitivement.</string>
+    <string name="trash_delete">Supprimer</string>
+    <string name="trash_cancel">Annuler</string>
+    <string name="trash_deleted_on">Supprimée le %1$s</string>
+    <string name="todo_title">Mes tâches</string>
+    <string name="todo_progress">%1$d sur %2$d terminées</string>
+    <string name="todo_empty_title">Tout est fait!</string>
+    <string name="todo_empty_subtitle">Appuyez sur + pour ajouter une tâche</string>
+    <string name="todo_section_pending">EN ATTENTE</string>
+    <string name="todo_section_completed">TERMINÉES</string>
+    <string name="todo_new_task">Nouvelle tâche</string>
+    <string name="todo_task_hint">Que faut-il faire?</string>
+    <string name="todo_priority">PRIORITÉ</string>
+    <string name="todo_priority_normal">Normal</string>
+    <string name="todo_priority_medium">Moyen</string>
+    <string name="todo_priority_high">Élevé</string>
+    <string name="todo_add">Ajouter une tâche</string>
+    <string name="todo_cancel">Annuler</string>
+    <string name="profile_welcome_back">Bon retour!</string>
+    <string name="profile_create_account_subtitle">Créer votre compte</string>
+    <string name="profile_sign_in">Se connecter</string>
+    <string name="profile_create_account">Créer un compte</string>
+    <string name="profile_google">Continuer avec Google</string>
+    <string name="profile_or">ou</string>
+    <string name="profile_have_account">Déjà un compte? Se connecter</string>
+    <string name="profile_no_account">Nouveau? Créer un compte</string>
+    <string name="profile_name_hint">Votre nom</string>
+    <string name="profile_email_hint">Email</string>
+    <string name="profile_password_hint">Mot de passe</string>
+    <string name="profile_info">INFORMATIONS DU PROFIL</string>
+    <string name="profile_display_name">Nom d\'affichage</string>
+    <string name="profile_age">Âge</string>
+    <string name="profile_bio">Bio</string>
+    <string name="profile_save">Enregistrer le profil</string>
+    <string name="profile_sign_out">Se déconnecter</string>
+    <string name="profile_default_name">Utilisateur Hoshi</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_subtitle">Personnalisez votre expérience</string>
+    <string name="settings_appearance">✨  APPARENCE</string>
+    <string name="settings_language">🌍  LANGUE</string>
+    <string name="settings_currently_selected">Actuellement sélectionné</string>
+    <string name="settings_version">Hoshi Memo v1.0</string>
+    <string name="common_cancel">Annuler</string>
+    <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Coffre secret</string>
+    <string name="secret_found">Vous l\'avez trouvé.</string>
+    <string name="secret_code">Code : %1$s</string>
+    <string name="secret_themes_title">Thèmes cachés</string>
+    <string name="secret_themes_subtitle">Changeable uniquement ici. Invisible ailleurs.</string>
+    <string name="secret_themes_hint">Appuyez pour appliquer. Pour le thème normal, allez dans Paramètres.</string>
+    <string name="secret_sounds_title">Sons du thème</string>
+    <string name="secret_sounds_subtitle">Sons de nav, frappe &amp; suppression pour thèmes secrets.</string>
+    <string name="secret_sounds_on">Sons activés</string>
+    <string name="secret_sounds_off">Sons désactivés</string>
+    <string name="secret_icons_title">Icônes secrètes</string>
+    <string name="secret_icons_subtitle">Change l\'apparence de l\'app sur l\'écran d\'accueil.</string>
+    <string name="secret_icons_warning">⚠ Déposez les icônes dans mipmap dans Android Studio.</string>
+    <string name="secret_star_title">Attrape-étoiles</string>
+    <string name="secret_star_subtitle">Attrape les étoiles. Elles accélèrent. Ne les rate pas.</string>
+    <string name="secret_star_tap">Appuyer pour jouer →</string>
+    <string name="secret_letter_title">Lettres au futur moi</string>
+    <string name="secret_letter_subtitle">Écris quelque chose. Verrouille-le. Lis-le le moment venu.</string>
+    <string name="secret_letter_tap">Ouvrir la boîte aux lettres →</string>
+    <string name="star_game_title">Attrape-étoiles</string>
+    <string name="star_game_desc">Attrape les étoiles avant qu\'elles disparaissent.\nElles tombent plus vite à mesure que le score augmente.</string>
+    <string name="star_game_best">Meilleur : %1$d ⭐</string>
+    <string name="star_game_play">Jouer</string>
+    <string name="star_game_back">Retour</string>
+    <string name="star_game_hint">Appuyer pour déplacer l\'attrapeur</string>
+    <string name="star_game_over">Étoiles parties</string>
+    <string name="star_game_score">Score : %1$d ⭐</string>
+    <string name="star_game_new_best">Nouveau record ! 🎉</string>
+    <string name="star_game_try_again">Réessayer</string>
+    <string name="letter_screen_title">Lettres au futur moi</string>
+    <string name="letter_empty_msg">Aucune lettre.\nÉcrivez-en une pour votre futur vous.</string>
+    <string name="letter_write_btn">Écrire une lettre</string>
+    <string name="letter_opens_on">S\'ouvre le : %1$s</string>
+    <string name="letter_opens_in_days">S\'ouvre dans %1$d jours</string>
+    <string name="letter_opens_in_day">S\'ouvre dans 1 jour</string>
+    <string name="letter_written_on">Écrite le : %1$s</string>
+    <string name="letter_compose_title">Écrire au futur vous</string>
+    <string name="letter_title_label">Titre</string>
+    <string name="letter_content_label">Votre lettre...</string>
+    <string name="letter_unlock_on">Déverrouiller le</string>
+    <string name="letter_cancel">Annuler</string>
+    <string name="letter_seal">Sceller &amp; Verrouiller 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Fermer</string>
+    <string name="letter_written_date">Écrite le %1$s</string>
+</resources>

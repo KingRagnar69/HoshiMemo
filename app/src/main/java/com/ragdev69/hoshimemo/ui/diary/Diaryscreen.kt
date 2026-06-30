@@ -37,7 +37,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.ragdev69.hoshimemo.ui.sound.LocalSoundConfig
 import com.ragdev69.hoshimemo.ui.sound.SoundManager
 import com.ragdev69.hoshimemo.ui.theme.LocalHoshiColors
@@ -291,7 +296,8 @@ fun DiaryScreen(
                             if (code == "181412") {
                                 onCodeUnlocked(code)
                             }
-                        }
+                        },
+                        onAdUnlock = { onCodeUnlocked("AD_UNLOCK") }
                     )
                 }
             }
@@ -794,13 +800,56 @@ private fun NotebookRules(colors: com.ragdev69.hoshimemo.ui.theme.HoshiColors) {
 // ── Code unlock panel ─────────────────────────────────────────────────────────
 // This is NOT a source-code editor. It's a passcode entry that, when a
 // recognised code is entered, calls onCodeEntered so the caller can navigate.
+// Also offers a "Watch Ad to Unlock" path: a rewarded ad that, once watched
+// to completion, calls onAdUnlock — this unlock is SESSION-ONLY (not
+// persisted), so it resets the next time the app is closed/restarted.
 @Composable
 private fun CodeUnlockPanel(
-    onCodeEntered: (String) -> Unit
+    onCodeEntered: (String) -> Unit,
+    onAdUnlock: () -> Unit
 ) {
-    val colors = LocalHoshiColors.current
+    val colors  = LocalHoshiColors.current
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
+
     var code   by remember { mutableStateOf("") }
     var shake  by remember { mutableStateOf(false) }
+
+    // ── Rewarded ad state ───────────────────────────────────────────────────
+    var rewardedAd   by remember { mutableStateOf<RewardedAd?>(null) }
+    var isAdLoading  by remember { mutableStateOf(false) }
+    var adLoadFailed by remember { mutableStateOf(false) }
+
+    val rewardedAdUnitId = if (com.ragdev69.hoshimemo.BuildConfig.DEBUG)
+        "ca-app-pub-3940256099942544/5224354917"   // Google's official rewarded test unit ID
+    else
+        "ca-app-pub-7539583464292210/8595709262"   // Diary Secret Vault Unlock — live rewarded ad unit
+
+    fun loadRewardedAd() {
+        if (isAdLoading || rewardedAd != null) return
+        isAdLoading = true
+        adLoadFailed = false
+        RewardedAd.load(
+            context,
+            rewardedAdUnitId,
+            AdRequest.Builder().build(),
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAd  = ad
+                    isAdLoading = false
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    rewardedAd   = null
+                    isAdLoading  = false
+                    adLoadFailed = true
+                }
+            }
+        )
+    }
+
+    // Preload as soon as this panel appears so the ad is ready to show
+    // the instant the user taps the button.
+    LaunchedEffect(Unit) { loadRewardedAd() }
 
     val shakeOffset by animateFloatAsState(
         targetValue = if (shake) 1f else 0f,
@@ -822,6 +871,7 @@ private fun CodeUnlockPanel(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -934,6 +984,78 @@ private fun CodeUnlockPanel(
                 }
             }
         }
+
+        // ── Divider + "Watch Ad to Unlock" alternative ─────────────────────
+        Spacer(modifier = Modifier.height(28.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(0.7f)
+        ) {
+            HorizontalDivider(modifier = Modifier.weight(1f), color = colors.border)
+            Text(
+                "OR",
+                style = MaterialTheme.typography.labelSmall.copy(color = colors.textSecondary),
+                modifier = Modifier.padding(horizontal = 10.dp)
+            )
+            HorizontalDivider(modifier = Modifier.weight(1f), color = colors.border)
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50.dp))
+                .background(colors.primary.copy(alpha = 0.12f))
+                .border(1.dp, colors.primary.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
+                .clickable(enabled = !isAdLoading) {
+                    val ad = rewardedAd
+                    if (ad != null && activity != null) {
+                        ad.show(activity) { _ ->
+                            // Reward earned — unlock for this session only.
+                            // Consume the ad instance and preload the next one
+                            // so it's ready if the user backs out and re-enters.
+                            rewardedAd = null
+                            onAdUnlock()
+                            loadRewardedAd()
+                        }
+                    } else {
+                        // Not ready yet — try loading again
+                        loadRewardedAd()
+                    }
+                }
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (isAdLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = colors.primary
+                    )
+                } else {
+                    Icon(Icons.Filled.PlayCircle, contentDescription = null, tint = colors.primary, modifier = Modifier.size(18.dp))
+                }
+                Text(
+                    if (isAdLoading) "Loading ad…" else "Watch Ad to Unlock",
+                    color = colors.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+            }
+        }
+
+        if (adLoadFailed) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Couldn't load ad — check connection and try again",
+                style = MaterialTheme.typography.labelSmall.copy(color = colors.textSecondary)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Unlocks until you close the app",
+            style = MaterialTheme.typography.labelSmall.copy(color = colors.textSecondary.copy(alpha = 0.6f))
+        )
     }
 }
 

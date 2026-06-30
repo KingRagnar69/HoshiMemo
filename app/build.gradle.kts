@@ -13,8 +13,8 @@ android {
         applicationId = "com.ragdev69.hoshimemo"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.6"
+        versionCode = 11
+        versionName = "2.1a"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -56,6 +56,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.7.1")
     ksp("androidx.room:room-compiler:2.7.1")
 
+
+    //language
+    implementation("androidx.appcompat:appcompat:1.7.1")
     // Core
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("androidx.core:core-ktx:1.12.0")

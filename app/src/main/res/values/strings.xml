@@ -93,4 +93,61 @@
     <!-- Common -->
     <string name="common_cancel">Cancel</string>
     <string name="common_save">Save</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Secret Vault</string>
+    <string name="secret_found">You found it.</string>
+    <string name="secret_code">Code: %1$s</string>
+    <string name="secret_themes_title">Hidden Themes</string>
+    <string name="secret_themes_subtitle">Only switchable from here. Invisible everywhere else.</string>
+    <string name="secret_themes_hint">Tap to apply. To return to your normal theme, go to Settings.</string>
+    <string name="secret_sounds_title">Theme Sounds</string>
+    <string name="secret_sounds_subtitle">Nav, typing &amp; delete sounds for secret themes.</string>
+    <string name="secret_sounds_on">Sounds on</string>
+    <string name="secret_sounds_off">Sounds off</string>
+    <string name="secret_icons_title">Secret Icons</string>
+    <string name="secret_icons_subtitle">Changes how the app looks on your home screen.</string>
+    <string name="secret_icons_warning">⚠ Drop icon images into mipmap in Android Studio. See AndroidManifest for alias names.</string>
+    <string name="secret_star_title">Star Catcher</string>
+    <string name="secret_star_subtitle">Catch falling stars. They get faster. Don\'t miss.</string>
+    <string name="secret_star_tap">Tap to play →</string>
+    <string name="secret_letter_title">Letters to Future Me</string>
+    <string name="secret_letter_subtitle">Write something. Lock it. Read it when the time comes.</string>
+    <string name="secret_letter_tap">Open letterbox →</string>
+
+    <!-- Star Catcher Game -->
+    <string name="star_game_title">Star Catcher</string>
+    <string name="star_game_desc">Catch falling stars before they vanish.\nThey fall faster as your score grows.</string>
+    <string name="star_game_best">Best: %1$d ⭐</string>
+    <string name="star_game_play">Play</string>
+    <string name="star_game_back">Back</string>
+    <string name="star_game_hint">Tap to move catcher</string>
+    <string name="star_game_over">Stars gone</string>
+    <string name="star_game_score">Score: %1$d ⭐</string>
+    <string name="star_game_new_best">New best! 🎉</string>
+    <string name="star_game_try_again">Try again</string>
+
+    <!-- Future Letter Screen -->
+    <string name="letter_screen_title">Letters to Future Me</string>
+    <string name="letter_empty_msg">No letters yet.\nWrite one for your future self.</string>
+    <string name="letter_write_btn">Write a letter</string>
+    <string name="letter_opens_on">Opens: %1$s</string>
+    <string name="letter_opens_in_days">Opens in %1$d days</string>
+    <string name="letter_opens_in_day">Opens in 1 day</string>
+    <string name="letter_written_on">Written: %1$s</string>
+    <string name="letter_compose_title">Write to Future You</string>
+    <string name="letter_title_label">Title</string>
+    <string name="letter_content_label">Your letter...</string>
+    <string name="letter_unlock_on">Unlock on</string>
+    <string name="letter_cancel">Cancel</string>
+    <string name="letter_seal">Seal &amp; Lock 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Close</string>
+    <string name="letter_written_date">Written on %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">RESTART</string>
+    <string name="settings_restart_app">Restart App</string>
+    <string name="settings_restart_subtitle">Fixes glitches if something isn\'t working right</string>
+    <string name="todo_sound_toggle">Toggle sound</string>
 </resources>

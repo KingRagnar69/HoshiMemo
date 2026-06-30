@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">الخزنة السرية</string>
+    <string name="secret_found">لقد وجدته.</string>
+    <string name="secret_code">الكود: %1$s</string>
+    <string name="secret_themes_title">ثيمات مخفية</string>
+    <string name="secret_themes_subtitle">قابل للتغيير من هنا فقط. غير مرئي في مكان آخر.</string>
+    <string name="secret_themes_hint">اضغط للتطبيق. للعودة للثيم العادي، اذهب إلى الإعدادات.</string>
+    <string name="secret_sounds_title">أصوات الثيم</string>
+    <string name="secret_sounds_subtitle">أصوات التنقل والكتابة والحذف للثيمات السرية.</string>
+    <string name="secret_sounds_on">الصوت مفعّل</string>
+    <string name="secret_sounds_off">الصوت معطّل</string>
+    <string name="secret_icons_title">أيقونات سرية</string>
+    <string name="secret_icons_subtitle">يغير مظهر التطبيق على الشاشة الرئيسية.</string>
+    <string name="secret_icons_warning">⚠ ضع صور الأيقونات في mipmap في Android Studio.</string>
+    <string name="secret_star_title">صائد النجوم</string>
+    <string name="secret_star_subtitle">اصطد النجوم الساقطة. تصبح أسرع. لا تفوتها.</string>
+    <string name="secret_star_tap">اضغط للعب →</string>
+    <string name="secret_letter_title">رسائل لنفسي المستقبلية</string>
+    <string name="secret_letter_subtitle">اكتب شيئاً. أغلقه. اقرأه حين يحين الوقت.</string>
+    <string name="secret_letter_tap">فتح صندوق الرسائل →</string>
+    <string name="star_game_title">صائد النجوم</string>
+    <string name="star_game_desc">اصطد النجوم قبل أن تختفي.\nتسقط أسرع كلما ارتفعت النقاط.</string>
+    <string name="star_game_best">الأفضل: %1$d ⭐</string>
+    <string name="star_game_play">العب</string>
+    <string name="star_game_back">رجوع</string>
+    <string name="star_game_hint">اضغط لتحريك القاطف</string>
+    <string name="star_game_over">اختفت النجوم</string>
+    <string name="star_game_score">النقاط: %1$d ⭐</string>
+    <string name="star_game_new_best">رقم قياسي جديد! 🎉</string>
+    <string name="star_game_try_again">حاول مرة أخرى</string>
+    <string name="letter_screen_title">رسائل لنفسي المستقبلية</string>
+    <string name="letter_empty_msg">لا رسائل بعد.\nاكتب رسالة لنفسك في المستقبل.</string>
+    <string name="letter_write_btn">كتابة رسالة</string>
+    <string name="letter_opens_on">يُفتح في: %1$s</string>
+    <string name="letter_opens_in_days">يُفتح خلال %1$d أيام</string>
+    <string name="letter_opens_in_day">يُفتح خلال يوم واحد</string>
+    <string name="letter_written_on">كُتبت في: %1$s</string>
+    <string name="letter_compose_title">اكتب لنفسك في المستقبل</string>
+    <string name="letter_title_label">العنوان</string>
+    <string name="letter_content_label">رسالتك...</string>
+    <string name="letter_unlock_on">فتح في</string>
+    <string name="letter_cancel">إلغاء</string>
+    <string name="letter_seal">إغلاق &amp; قفل 🔒</string>
+    <string name="letter_ok">موافق</string>
+    <string name="letter_close">إغلاق</string>
+    <string name="letter_written_date">كُتبت في %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">إعادة التشغيل</string>
+    <string name="settings_restart_app">إعادة تشغيل التطبيق</string>
+    <string name="settings_restart_subtitle">يصلح المشكلات إذا لم يعمل شيء بشكل صحيح</string>
+    <string name="todo_sound_toggle">تبديل الصوت</string>
 </resources>

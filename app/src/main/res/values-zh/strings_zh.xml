@@ -74,4 +74,57 @@
     <string name="settings_version">星记 v1.0</string>
     <string name="common_cancel">取消</string>
     <string name="common_save">保存</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">秘密保险库</string>
+    <string name="secret_found">你找到了。</string>
+    <string name="secret_code">密码：%1$s</string>
+    <string name="secret_themes_title">隐藏主题</string>
+    <string name="secret_themes_subtitle">只能在这里切换。其他地方不可见。</string>
+    <string name="secret_themes_hint">点击应用。要恢复普通主题，请前往设置。</string>
+    <string name="secret_sounds_title">主题音效</string>
+    <string name="secret_sounds_subtitle">秘密主题的导航、输入和删除音效。</string>
+    <string name="secret_sounds_on">声音开启</string>
+    <string name="secret_sounds_off">声音关闭</string>
+    <string name="secret_icons_title">秘密图标</string>
+    <string name="secret_icons_subtitle">更改应用在主屏幕上的显示方式。</string>
+    <string name="secret_icons_warning">⚠ 在Android Studio中将图标图像放入mipmap。</string>
+    <string name="secret_star_title">接星星</string>
+    <string name="secret_star_subtitle">接住下落的星星。速度越来越快。不要错过。</string>
+    <string name="secret_star_tap">点击游玩 →</string>
+    <string name="secret_letter_title">给未来自己的信</string>
+    <string name="secret_letter_subtitle">写点什么。锁起来。时机到了再读。</string>
+    <string name="secret_letter_tap">打开信箱 →</string>
+    <string name="star_game_title">接星星</string>
+    <string name="star_game_desc">在星星消失前接住它们。\n分数越高，下落越快。</string>
+    <string name="star_game_best">最高：%1$d ⭐</string>
+    <string name="star_game_play">开始</string>
+    <string name="star_game_back">返回</string>
+    <string name="star_game_hint">点击移动接球器</string>
+    <string name="star_game_over">星星消失了</string>
+    <string name="star_game_score">分数：%1$d ⭐</string>
+    <string name="star_game_new_best">新纪录！🎉</string>
+    <string name="star_game_try_again">再试一次</string>
+    <string name="letter_screen_title">给未来自己的信</string>
+    <string name="letter_empty_msg">还没有信件。\n给未来的自己写一封吧。</string>
+    <string name="letter_write_btn">写信</string>
+    <string name="letter_opens_on">开启日：%1$s</string>
+    <string name="letter_opens_in_days">%1$d天后开启</string>
+    <string name="letter_opens_in_day">1天后开启</string>
+    <string name="letter_written_on">写于：%1$s</string>
+    <string name="letter_compose_title">给未来的自己写</string>
+    <string name="letter_title_label">标题</string>
+    <string name="letter_content_label">你的信...</string>
+    <string name="letter_unlock_on">解锁日期</string>
+    <string name="letter_cancel">取消</string>
+    <string name="letter_seal">封印与锁定 🔒</string>
+    <string name="letter_ok">确定</string>
+    <string name="letter_close">关闭</string>
+    <string name="letter_written_date">%1$s写于</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">重启</string>
+    <string name="settings_restart_app">重启应用</string>
+    <string name="settings_restart_subtitle">修复运行异常的问题</string>
+    <string name="todo_sound_toggle">切换声音</string>
 </resources>

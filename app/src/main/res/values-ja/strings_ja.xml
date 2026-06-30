@@ -74,4 +74,57 @@
     <string name="settings_version">ホシメモ v1.0</string>
     <string name="common_cancel">キャンセル</string>
     <string name="common_save">保存</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">シークレット・ヴォルト</string>
+    <string name="secret_found">見つけましたね。</string>
+    <string name="secret_code">コード: %1$s</string>
+    <string name="secret_themes_title">隠しテーマ</string>
+    <string name="secret_themes_subtitle">ここからのみ変更可能。他の場所では非表示。</string>
+    <string name="secret_themes_hint">タップして適用。通常テーマはSettings から。</string>
+    <string name="secret_sounds_title">テーマサウンド</string>
+    <string name="secret_sounds_subtitle">秘密テーマのナビ・タイプ・削除サウンド。</string>
+    <string name="secret_sounds_on">サウンドオン</string>
+    <string name="secret_sounds_off">サウンドオフ</string>
+    <string name="secret_icons_title">シークレットアイコン</string>
+    <string name="secret_icons_subtitle">ホーム画面でのアプリの見た目を変えます。</string>
+    <string name="secret_icons_warning">⚠ Android StudioのmipmapにIconの画像を置いてください。</string>
+    <string name="secret_star_title">スターキャッチャー</string>
+    <string name="secret_star_subtitle">落ちてくる星を捕まえよう。どんどん速くなる。逃すな。</string>
+    <string name="secret_star_tap">タップして遊ぶ →</string>
+    <string name="secret_letter_title">未来の自分への手紙</string>
+    <string name="secret_letter_subtitle">何かを書く。ロックする。時が来たら読む。</string>
+    <string name="secret_letter_tap">レターボックスを開く →</string>
+    <string name="star_game_title">スターキャッチャー</string>
+    <string name="star_game_desc">星が消える前に捕まえよう。\nスコアが上がるほど速くなる。</string>
+    <string name="star_game_best">ベスト: %1$d ⭐</string>
+    <string name="star_game_play">プレイ</string>
+    <string name="star_game_back">戻る</string>
+    <string name="star_game_hint">タップでキャッチャーを動かす</string>
+    <string name="star_game_over">星がなくなった</string>
+    <string name="star_game_score">スコア: %1$d ⭐</string>
+    <string name="star_game_new_best">新記録！ 🎉</string>
+    <string name="star_game_try_again">もう一度</string>
+    <string name="letter_screen_title">未来の自分への手紙</string>
+    <string name="letter_empty_msg">まだ手紙がありません。\n未来の自分に手紙を書きましょう。</string>
+    <string name="letter_write_btn">手紙を書く</string>
+    <string name="letter_opens_on">開封日: %1$s</string>
+    <string name="letter_opens_in_days">%1$d日後に開く</string>
+    <string name="letter_opens_in_day">1日後に開く</string>
+    <string name="letter_written_on">作成日: %1$s</string>
+    <string name="letter_compose_title">未来の自分へ書く</string>
+    <string name="letter_title_label">タイトル</string>
+    <string name="letter_content_label">あなたの手紙...</string>
+    <string name="letter_unlock_on">開封日</string>
+    <string name="letter_cancel">キャンセル</string>
+    <string name="letter_seal">封印 &amp; ロック 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">閉じる</string>
+    <string name="letter_written_date">%1$sに書かれた</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">再起動</string>
+    <string name="settings_restart_app">アプリを再起動</string>
+    <string name="settings_restart_subtitle">何かがうまく動かない時の不具合を直します</string>
+    <string name="todo_sound_toggle">サウンド切り替え</string>
 </resources>

@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">ห้องนิรภัยลับ</string>
+    <string name="secret_found">คุณพบมันแล้ว</string>
+    <string name="secret_code">รหัส: %1$s</string>
+    <string name="secret_themes_title">ธีมที่ซ่อนอยู่</string>
+    <string name="secret_themes_subtitle">เปลี่ยนได้เฉพาะที่นี่ ที่อื่นมองไม่เห็น</string>
+    <string name="secret_themes_hint">แตะเพื่อใช้งาน หากต้องการธีมปกติไปที่การตั้งค่า</string>
+    <string name="secret_sounds_title">เสียงธีม</string>
+    <string name="secret_sounds_subtitle">เสียงนำทาง พิมพ์ และลบสำหรับธีมลับ</string>
+    <string name="secret_sounds_on">เสียงเปิด</string>
+    <string name="secret_sounds_off">เสียงปิด</string>
+    <string name="secret_icons_title">ไอคอนลับ</string>
+    <string name="secret_icons_subtitle">เปลี่ยนลักษณะของแอปบนหน้าจอหลัก</string>
+    <string name="secret_icons_warning">⚠ วางภาพไอคอนใน mipmap ใน Android Studio</string>
+    <string name="secret_star_title">ดักดาว</string>
+    <string name="secret_star_subtitle">จับดาวที่ตกลงมา ยิ่งเร็วขึ้นเรื่อยๆ อย่าพลาด</string>
+    <string name="secret_star_tap">แตะเพื่อเล่น →</string>
+    <string name="secret_letter_title">จดหมายถึงตัวเองในอนาคต</string>
+    <string name="secret_letter_subtitle">เขียนบางอย่าง ล็อคไว้ อ่านเมื่อถึงเวลา</string>
+    <string name="secret_letter_tap">เปิดกล่องจดหมาย →</string>
+    <string name="star_game_title">ดักดาว</string>
+    <string name="star_game_desc">จับดาวก่อนที่มันจะหายไป\nยิ่งคะแนนสูงยิ่งตกเร็ว</string>
+    <string name="star_game_best">ดีที่สุด: %1$d ⭐</string>
+    <string name="star_game_play">เล่น</string>
+    <string name="star_game_back">กลับ</string>
+    <string name="star_game_hint">แตะเพื่อเลื่อนตัวจับ</string>
+    <string name="star_game_over">ดาวหายไปแล้ว</string>
+    <string name="star_game_score">คะแนน: %1$d ⭐</string>
+    <string name="star_game_new_best">สถิติใหม่! 🎉</string>
+    <string name="star_game_try_again">ลองอีกครั้ง</string>
+    <string name="letter_screen_title">จดหมายถึงตัวเองในอนาคต</string>
+    <string name="letter_empty_msg">ยังไม่มีจดหมาย\nเขียนจดหมายถึงตัวเองในอนาคต</string>
+    <string name="letter_write_btn">เขียนจดหมาย</string>
+    <string name="letter_opens_on">เปิดได้: %1$s</string>
+    <string name="letter_opens_in_days">เปิดใน %1$d วัน</string>
+    <string name="letter_opens_in_day">เปิดใน 1 วัน</string>
+    <string name="letter_written_on">เขียนเมื่อ: %1$s</string>
+    <string name="letter_compose_title">เขียนถึงตัวเองในอนาคต</string>
+    <string name="letter_title_label">หัวเรื่อง</string>
+    <string name="letter_content_label">จดหมายของคุณ...</string>
+    <string name="letter_unlock_on">ปลดล็อควันที่</string>
+    <string name="letter_cancel">ยกเลิก</string>
+    <string name="letter_seal">ปิดผนึก &amp; ล็อค 🔒</string>
+    <string name="letter_ok">ตกลง</string>
+    <string name="letter_close">ปิด</string>
+    <string name="letter_written_date">เขียนเมื่อ %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">รีสตาร์ท</string>
+    <string name="settings_restart_app">รีสตาร์ทแอป</string>
+    <string name="settings_restart_subtitle">แก้ไขข้อผิดพลาดหากมีอะไรทำงานไม่ถูกต้อง</string>
+    <string name="todo_sound_toggle">สลับเสียง</string>
 </resources>

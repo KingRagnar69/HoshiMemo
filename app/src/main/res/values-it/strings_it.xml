@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Caveau Segreto</string>
+    <string name="secret_found">L\'hai trovato.</string>
+    <string name="secret_code">Codice: %1$s</string>
+    <string name="secret_themes_title">Temi nascosti</string>
+    <string name="secret_themes_subtitle">Modificabile solo da qui. Invisibile altrove.</string>
+    <string name="secret_themes_hint">Tocca per applicare. Per il tema normale, vai nelle Impostazioni.</string>
+    <string name="secret_sounds_title">Suoni del tema</string>
+    <string name="secret_sounds_subtitle">Suoni di nav, digitazione &amp; eliminazione per temi segreti.</string>
+    <string name="secret_sounds_on">Suoni attivi</string>
+    <string name="secret_sounds_off">Suoni disattivi</string>
+    <string name="secret_icons_title">Icone segrete</string>
+    <string name="secret_icons_subtitle">Cambia l\'aspetto dell\'app nella schermata principale.</string>
+    <string name="secret_icons_warning">⚠ Inserisci le immagini delle icone in mipmap in Android Studio.</string>
+    <string name="secret_star_title">Acchiappa stelle</string>
+    <string name="secret_star_subtitle">Prendi le stelle che cadono. Accelerano. Non perderle.</string>
+    <string name="secret_star_tap">Tocca per giocare →</string>
+    <string name="secret_letter_title">Lettere al me futuro</string>
+    <string name="secret_letter_subtitle">Scrivi qualcosa. Bloccalo. Leggilo quando è il momento.</string>
+    <string name="secret_letter_tap">Apri la cassetta delle lettere →</string>
+    <string name="star_game_title">Acchiappa stelle</string>
+    <string name="star_game_desc">Prendi le stelle prima che spariscano.\nCadono più veloce con il punteggio.</string>
+    <string name="star_game_best">Migliore: %1$d ⭐</string>
+    <string name="star_game_play">Gioca</string>
+    <string name="star_game_back">Indietro</string>
+    <string name="star_game_hint">Tocca per spostare il catcher</string>
+    <string name="star_game_over">Stelle sparite</string>
+    <string name="star_game_score">Punteggio: %1$d ⭐</string>
+    <string name="star_game_new_best">Nuovo record! 🎉</string>
+    <string name="star_game_try_again">Riprova</string>
+    <string name="letter_screen_title">Lettere al me futuro</string>
+    <string name="letter_empty_msg">Nessuna lettera ancora.\nScrivine una per il tuo io futuro.</string>
+    <string name="letter_write_btn">Scrivi una lettera</string>
+    <string name="letter_opens_on">Apre il: %1$s</string>
+    <string name="letter_opens_in_days">Apre tra %1$d giorni</string>
+    <string name="letter_opens_in_day">Apre tra 1 giorno</string>
+    <string name="letter_written_on">Scritta il: %1$s</string>
+    <string name="letter_compose_title">Scrivi al tuo io futuro</string>
+    <string name="letter_title_label">Titolo</string>
+    <string name="letter_content_label">La tua lettera...</string>
+    <string name="letter_unlock_on">Sblocca il</string>
+    <string name="letter_cancel">Annulla</string>
+    <string name="letter_seal">Sigilla &amp; Blocca 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Chiudi</string>
+    <string name="letter_written_date">Scritta il %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">RIAVVIA</string>
+    <string name="settings_restart_app">Riavvia l\'app</string>
+    <string name="settings_restart_subtitle">Risolve i problemi se qualcosa non funziona bene</string>
+    <string name="todo_sound_toggle">Attiva/disattiva audio</string>
 </resources>

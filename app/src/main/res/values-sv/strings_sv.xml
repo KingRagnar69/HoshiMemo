@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">Hemligt Valv</string>
+    <string name="secret_found">Du hittade det.</string>
+    <string name="secret_code">Kod: %1$s</string>
+    <string name="secret_themes_title">Dolda teman</string>
+    <string name="secret_themes_subtitle">Kan endast ändras härifrån. Osynlig annars.</string>
+    <string name="secret_themes_hint">Tryck för att tillämpa. För normalt tema, gå till Inställningar.</string>
+    <string name="secret_sounds_title">Temaljud</string>
+    <string name="secret_sounds_subtitle">Nav-, skriv- och raderingsljud för hemliga teman.</string>
+    <string name="secret_sounds_on">Ljud på</string>
+    <string name="secret_sounds_off">Ljud av</string>
+    <string name="secret_icons_title">Hemliga ikoner</string>
+    <string name="secret_icons_subtitle">Ändrar hur appen ser ut på startskärmen.</string>
+    <string name="secret_icons_warning">⚠ Lägg ikonbilder i mipmap i Android Studio.</string>
+    <string name="secret_star_title">Stjärnfångaren</string>
+    <string name="secret_star_subtitle">Fånga fallande stjärnor. De blir snabbare. Missa inte.</string>
+    <string name="secret_star_tap">Tryck för att spela →</string>
+    <string name="secret_letter_title">Brev till framtida mig</string>
+    <string name="secret_letter_subtitle">Skriv något. Lås det. Läs det när tiden kommer.</string>
+    <string name="secret_letter_tap">Öppna brevlådan →</string>
+    <string name="star_game_title">Stjärnfångaren</string>
+    <string name="star_game_desc">Fånga stjärnor innan de försvinner.\nDe faller snabbare ju högre poänget.</string>
+    <string name="star_game_best">Bäst: %1$d ⭐</string>
+    <string name="star_game_play">Spela</string>
+    <string name="star_game_back">Tillbaka</string>
+    <string name="star_game_hint">Tryck för att flytta fångaren</string>
+    <string name="star_game_over">Stjärnor borta</string>
+    <string name="star_game_score">Poäng: %1$d ⭐</string>
+    <string name="star_game_new_best">Nytt rekord! 🎉</string>
+    <string name="star_game_try_again">Försök igen</string>
+    <string name="letter_screen_title">Brev till framtida mig</string>
+    <string name="letter_empty_msg">Inga brev ännu.\nSkriv ett till ditt framtida jag.</string>
+    <string name="letter_write_btn">Skriv ett brev</string>
+    <string name="letter_opens_on">Öppnas: %1$s</string>
+    <string name="letter_opens_in_days">Öppnas om %1$d dagar</string>
+    <string name="letter_opens_in_day">Öppnas om 1 dag</string>
+    <string name="letter_written_on">Skriven: %1$s</string>
+    <string name="letter_compose_title">Skriv till ditt framtida jag</string>
+    <string name="letter_title_label">Titel</string>
+    <string name="letter_content_label">Ditt brev...</string>
+    <string name="letter_unlock_on">Lås upp den</string>
+    <string name="letter_cancel">Avbryt</string>
+    <string name="letter_seal">Försegla &amp; Lås 🔒</string>
+    <string name="letter_ok">OK</string>
+    <string name="letter_close">Stäng</string>
+    <string name="letter_written_date">Skriven %1$s</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">OMSTART</string>
+    <string name="settings_restart_app">Starta om appen</string>
+    <string name="settings_restart_subtitle">Fixar fel om något inte fungerar korrekt</string>
+    <string name="todo_sound_toggle">Växla ljud</string>
 </resources>

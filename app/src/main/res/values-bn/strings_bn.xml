@@ -74,4 +74,57 @@
     <string name="settings_version">Hoshi Memo v1.0</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
+
+    <!-- Secret Screen -->
+    <string name="secret_vault_title">গোপন ভল্ট</string>
+    <string name="secret_found">আপনি এটি খুঁজে পেয়েছেন।</string>
+    <string name="secret_code">কোড: %1$s</string>
+    <string name="secret_themes_title">লুকানো থিম</string>
+    <string name="secret_themes_subtitle">শুধু এখান থেকে পরিবর্তনযোগ্য। অন্যত্র অদৃশ্য।</string>
+    <string name="secret_themes_hint">প্রয়োগ করতে ট্যাপ করুন। স্বাভাবিক থিমে ফিরতে সেটিংসে যান।</string>
+    <string name="secret_sounds_title">থিমের শব্দ</string>
+    <string name="secret_sounds_subtitle">গোপন থিমের জন্য নেভিগেশন, টাইপিং ও মুছে ফেলার শব্দ।</string>
+    <string name="secret_sounds_on">শব্দ চালু</string>
+    <string name="secret_sounds_off">শব্দ বন্ধ</string>
+    <string name="secret_icons_title">গোপন আইকন</string>
+    <string name="secret_icons_subtitle">হোম স্ক্রিনে অ্যাপের চেহারা পরিবর্তন করে।</string>
+    <string name="secret_icons_warning">⚠ Android Studio-তে mipmap-এ আইকন ইমেজ রাখুন।</string>
+    <string name="secret_star_title">তারা ধরা</string>
+    <string name="secret_star_subtitle">পড়ন্ত তারা ধরো। এগুলো দ্রুত হয়। মিস করো না।</string>
+    <string name="secret_star_tap">খেলতে ট্যাপ করুন →</string>
+    <string name="secret_letter_title">ভবিষ্যতের আমিকে চিঠি</string>
+    <string name="secret_letter_subtitle">কিছু লিখুন। লক করুন। সময় এলে পড়ুন।</string>
+    <string name="secret_letter_tap">লেটারবক্স খুলুন →</string>
+    <string name="star_game_title">তারা ধরা</string>
+    <string name="star_game_desc">তারাগুলো মিলিয়ে যাওয়ার আগে ধরো।\nস্কোর বাড়লে এগুলো দ্রুত পড়ে।</string>
+    <string name="star_game_best">সেরা: %1$d ⭐</string>
+    <string name="star_game_play">খেলো</string>
+    <string name="star_game_back">ফিরে যাও</string>
+    <string name="star_game_hint">ক্যাচার সরাতে ট্যাপ করুন</string>
+    <string name="star_game_over">তারা চলে গেছে</string>
+    <string name="star_game_score">স্কোর: %1$d ⭐</string>
+    <string name="star_game_new_best">নতুন রেকর্ড! 🎉</string>
+    <string name="star_game_try_again">আবার চেষ্টা করো</string>
+    <string name="letter_screen_title">ভবিষ্যতের আমিকে চিঠি</string>
+    <string name="letter_empty_msg">এখনো কোনো চিঠি নেই।\nভবিষ্যতের নিজের জন্য একটি লিখুন।</string>
+    <string name="letter_write_btn">চিঠি লিখুন</string>
+    <string name="letter_opens_on">খোলে: %1$s</string>
+    <string name="letter_opens_in_days">%1$d দিনে খোলে</string>
+    <string name="letter_opens_in_day">১ দিনে খোলে</string>
+    <string name="letter_written_on">লেখা হয়েছে: %1$s</string>
+    <string name="letter_compose_title">ভবিষ্যতের নিজেকে লিখুন</string>
+    <string name="letter_title_label">শিরোনাম</string>
+    <string name="letter_content_label">তোমার চিঠি...</string>
+    <string name="letter_unlock_on">আনলক তারিখ</string>
+    <string name="letter_cancel">বাতিল</string>
+    <string name="letter_seal">সিল &amp; লক 🔒</string>
+    <string name="letter_ok">ঠিক আছে</string>
+    <string name="letter_close">বন্ধ করুন</string>
+    <string name="letter_written_date">%1$s তারিখে লেখা</string>
+
+    <!-- Restart & Sound Toggle -->
+    <string name="settings_restart">পুনরায় চালু</string>
+    <string name="settings_restart_app">অ্যাপ পুনরায় চালু করুন</string>
+    <string name="settings_restart_subtitle">কিছু ঠিকভাবে কাজ না করলে এটি সমাধান করে</string>
+    <string name="todo_sound_toggle">শব্দ টগল করুন</string>
 </resources>
