@@ -127,15 +127,17 @@ class MainActivity : ComponentActivity() {
                     // 1. Persist to SharedPrefs for attachBaseContext on cold start
                     HoshiApp.persistLocale(this@MainActivity, currentLanguage)
 
-                    // 2. Android 13+ per-app language API (works without recreate)
+                    // 2. Always recreate — this reloads all string resources
+                    // immediately in the new language on every Android version.
+                    // On Android 13+ we also call setApplicationLocales() so the
+                    // system knows about the preference (for per-app language settings),
+                    // but recreate() is still needed to actually reload the UI.
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         AppCompatDelegate.setApplicationLocales(
                             LocaleListCompat.forLanguageTags(currentLanguage)
                         )
-                    } else {
-                        // Android 12 and below: recreate() is required
-                        recreate()
                     }
+                    recreate()
                 }
                 lastAppliedLang = currentLanguage
             }

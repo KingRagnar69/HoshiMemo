@@ -353,6 +353,15 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                             modifier = Modifier.weight(1f).padding(start = 4.dp)
                         )
                         IconButton(
+                            onClick = {
+                                selectedIds.forEach { viewModel.resetTodo(it) }
+                                exitSelectionMode()
+                            },
+                            enabled = selectedIds.isNotEmpty()
+                        ) {
+                            Icon(Icons.Filled.Refresh, "Reset selected", tint = colors.primary)
+                        }
+                        IconButton(
                             onClick = { if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true },
                             enabled = selectedIds.isNotEmpty()
                         ) {
@@ -931,6 +940,17 @@ fun SwipeableTodoCard(
     val hasTimer     = todo.timerSeconds > 0L
     val timerRunning = todo.timerRunning()
 
+    // FIX: no more "Did you complete X?" confirmation. Single tasks now
+    // auto-complete once their timer hits zero, exactly like tasks inside
+    // a group — no dialog, no extra tap. This also "catches up" tasks
+    // whose timer ran out while you were on a different screen, so they
+    // don't get stuck at 00:00 forever with no Reset button.
+    //
+    // Re-firing is prevented naturally by LaunchedEffect's own key
+    // semantics: once onMarkComplete() succeeds and todo.isCompleted
+    // flips to true, this effect's key tuple changes, so it relaunches —
+    // sees timerRunning is now false — and returns immediately without
+    // calling onMarkComplete() again. No extra "already fired" flag needed.
     LaunchedEffect(todo.id, todo.isCompleted, todo.isFailed, todo.timerStartedAt) {
         if (!timerRunning) return@LaunchedEffect
         while (true) {
@@ -939,17 +959,7 @@ fun SwipeableTodoCard(
             delay(1_000L)
         }
         remainingSecs = 0L
-    }
-
-    // FIX: no more "Did you complete X?" confirmation. Single tasks now
-    // auto-complete the instant their timer hits zero, exactly like tasks
-    // inside a group — no dialog, no extra tap.
-    var autoCompletedFired by remember(todo.id) { mutableStateOf(false) }
-    LaunchedEffect(todo.id, todo.isCompleted, todo.isFailed, todo.timerStartedAt, remainingSecs) {
-        val expired = hasTimer && todo.timerStartedAt > 0L && remainingSecs <= 0L &&
-                !todo.isCompleted && !todo.isFailed
-        if (expired && !autoCompletedFired) {
-            autoCompletedFired = true
+        if (!todo.isCompleted && !todo.isFailed) {
             onMarkComplete()
         }
     }
