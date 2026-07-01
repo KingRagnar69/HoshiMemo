@@ -57,8 +57,8 @@ class MainActivity : ComponentActivity() {
     private val handler        = android.os.Handler(android.os.Looper.getMainLooper())
     private var timerRunnable: Runnable? = null
 
-    private val firstAdAt   = 60
-    private val repeatEvery = 1200
+    private val firstAdAt   = 600   // 10 minutes
+    private val repeatEvery = 1200  // 20 minutes
     private var nextAdAt    = firstAdAt
 
     // ── FIX: attachBaseContext wraps the locale on every cold start.
