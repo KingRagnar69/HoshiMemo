@@ -66,6 +66,8 @@ object FutureLetterManager {
             val updated  = existing.filterNot { it.id == letter.id } + letter
             prefs[KEY_LETTERS] = updated.toJsonString()
         }
+        // Schedule the "it's unlocked" notification for this letter's unlockAt time.
+        LetterAlarmScheduler.schedule(context.applicationContext, letter)
     }
 
     suspend fun markOpened(context: Context, letterId: String) {
@@ -81,5 +83,6 @@ object FutureLetterManager {
             val existing = prefs[KEY_LETTERS]?.toLetterList() ?: emptyList()
             prefs[KEY_LETTERS] = existing.filterNot { it.id == letterId }.toJsonString()
         }
+        LetterAlarmScheduler.cancel(context.applicationContext, letterId)
     }
 }

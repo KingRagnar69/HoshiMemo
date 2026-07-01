@@ -1,11 +1,17 @@
 package com.ragdev69.hoshimemo.ui.secret
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -42,6 +48,28 @@ fun FutureLetterScreen(onBack: () -> Unit) {
     var viewingLetter by remember { mutableStateOf<FutureLetter?>(null) }
 
     val nowMs = System.currentTimeMillis()
+
+    // Ask for notification permission so the "your letter unlocked" alert
+    // can actually be shown. Only needed on Android 13+.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* no-op either way — alarms still schedule, notification just won't show if denied */ }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Make sure letters written before this feature existed (or whose alarm
+    // never got scheduled, e.g. app was force-stopped) still get one.
+    // schedule() is a no-op for letters that are already open-able or opened.
+    LaunchedEffect(letters) {
+        letters.forEach { LetterAlarmScheduler.schedule(context.applicationContext, it) }
+    }
 
     Scaffold(
         containerColor = colors.background,

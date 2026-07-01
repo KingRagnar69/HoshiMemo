@@ -466,7 +466,10 @@ fun TodoScreen(viewModel: TodoViewModel = viewModel()) {
                                         SoundManager.playTodoStart(soundConfig.secretTheme, soundConfig.muted)
                                         viewModel.startTimer(todo.id)
                                     },
-                                    onMarkComplete = { viewModel.toggleTodo(todo.id, true) },
+                                    onMarkComplete = {
+                                        SoundManager.playTodoComplete(soundConfig.secretTheme, soundConfig.muted)
+                                        viewModel.toggleTodo(todo.id, true)
+                                    },
                                     justCompleted = justCompleted, justFailed = justFailed,
                                     expiredDismissed = expiredDismissed,
                                     onExpiredDismissed = { viewModel.markExpiredDialogDismissed(todo.id) },
@@ -938,34 +941,17 @@ fun SwipeableTodoCard(
         remainingSecs = 0L
     }
 
-    val expiredDialogVisible = showExpiredDialog && hasTimer && todo.timerStartedAt > 0L &&
-            remainingSecs <= 0L && !todo.isCompleted && !todo.isFailed && todo.id !in expiredDismissed
-
-    if (expiredDialogVisible) {
-        AlertDialog(
-            onDismissRequest = { onExpiredDismissed() },
-            containerColor   = colors.surface,
-            shape            = RoundedCornerShape(20.dp),
-            title = { Text("⏰  Time's up!", color = colors.text, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
-            text  = { Text("Did you complete \"${todo.title}\"?", color = colors.textSecondary) },
-            confirmButton = {
-                Button(onClick = { onExpiredDismissed(); onMarkComplete() },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)) {
-                    Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Yes, done!", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { onExpiredDismissed() },
-                    shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, colors.border)) {
-                    Icon(Icons.Filled.Close, null, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Not yet", color = colors.textSecondary)
-                }
-            }
-        )
+    // FIX: no more "Did you complete X?" confirmation. Single tasks now
+    // auto-complete the instant their timer hits zero, exactly like tasks
+    // inside a group — no dialog, no extra tap.
+    var autoCompletedFired by remember(todo.id) { mutableStateOf(false) }
+    LaunchedEffect(todo.id, todo.isCompleted, todo.isFailed, todo.timerStartedAt, remainingSecs) {
+        val expired = hasTimer && todo.timerStartedAt > 0L && remainingSecs <= 0L &&
+                !todo.isCompleted && !todo.isFailed
+        if (expired && !autoCompletedFired) {
+            autoCompletedFired = true
+            onMarkComplete()
+        }
     }
 
     Box(modifier = Modifier.fillMaxWidth().scale(cardScale)) {
