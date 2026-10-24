@@ -8,15 +8,18 @@ plugins {
 
 android {
     namespace = "com.ragdev69.hoshimemo"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.ragdev69.hoshimemo"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 11
-        versionName = "2.1a"
+        targetSdk = 36
+        versionCode = 13
+        versionName = "2.1ba"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+
+
 
     buildTypes {
         release {
